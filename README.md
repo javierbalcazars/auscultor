@@ -441,3 +441,14 @@ copiar `.env.example` ni la FAQ genérica sobre una instalación configurada.
 - Instrucciones para Arch Linux, Debian/Ubuntu y Fedora.
 - Persistencia de alertas humanas y recuperación después de reinicios.
 - Protección frente a sesiones cifradas dañadas y procesos duplicados.
+
+## Licencia
+
+Este proyecto se distribuye bajo la **GNU Affero General Public License v3.0 o
+posterior** (`AGPL-3.0-or-later`). Puedes usar, estudiar, modificar y redistribuir
+el programa bajo sus condiciones. Si ofreces una versión modificada para que
+otras personas interactúen con ella mediante una red, debes ofrecerles también
+el código fuente correspondiente conforme a la licencia.
+
+Consulta el texto completo en [LICENSE](LICENSE) y la
+[información oficial de GNU](https://www.gnu.org/licenses/agpl-3.0.html).

@@ -3,6 +3,7 @@
   "version": "1.5.1",
   "type": "module",
   "description": "Bot de WhatsApp que responde preguntas de clientes usando archivos Markdown y un LLM",
+  "license": "AGPL-3.0-or-later",
   "main": "src/index.js",
   "engines": {
     "node": ">=24 <27"
