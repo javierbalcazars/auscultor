@@ -1,0 +1,26 @@
+[Unit]
+Description=Asistente de WhatsApp para glamping
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=[USER]
+WorkingDirectory=/home/[USER]/whatsapp-bot
+# Si Node se instaló con nvm, reemplazar /usr/bin/node por "command -v node".
+ExecStart=/usr/bin/node /home/[USER]/whatsapp-bot/src/index.js
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=20
+Environment=NODE_ENV=production
+Environment=TZ=America/Santiago
+UMask=0077
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=whatsapp-bot
+
+[Install]
+WantedBy=multi-user.target
