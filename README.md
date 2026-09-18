@@ -136,13 +136,15 @@ npm ci
 cp .env.example .env
 ```
 
-El repositorio incluye `.env.example` y un Vault genérico para instalaciones
-nuevas. La copia de `.env.example` es solo para la primera instalación: conserva
-el `.env` existente al actualizar. El repositorio incluye `Vault/FAQs`
-con contenido genérico para completar; no reemplaces un Vault configurado al
-actualizar. `npm ci` utiliza las versiones exactas del lockfile.
+La copia de `.env.example` se realiza solamente durante la primera instalación.
+En una actualización conserva siempre el `.env`, el Vault y la sesión existentes.
+Después abre el panel con `npm run admin`: es el método recomendado para completar
+y validar la configuración.
 
-Edita `.env` y configura:
+<details>
+<summary>Referencia para configurar <code>.env</code> manualmente</summary>
+
+El panel administra estas mismas variables:
 
 - `OPENAI_API_KEY`: clave privada de OpenAI.
 - `BUSINESS_NAME`: nombre comercial que aparecerá en los mensajes y logs.
@@ -176,23 +178,16 @@ Edita `.env` y configura:
 - `MAX_REQUESTS_PER_HOUR`: máximo de consultas automáticas por contacto y hora.
 - `IGNORE_NUMBERS`: números que el bot debe ignorar, separados por comas.
 
-Después de configurar `.env`, abre
+</details>
+
+Después de guardar la configuración, abre
 `Vault/FAQs/Información del Glamping.md` y reemplaza la información de ejemplo
 por datos confirmados de tu negocio. Puedes crear otros archivos `.md` dentro de
 `Vault/FAQs`; el bot carga todos los documentos de esa carpeta antes de responder.
 
-Al iniciar, el programa valida la configuración. Si falta una clave, el número
-del encargado, el Vault, la carpeta `Vault/FAQs`, un documento Markdown de FAQ
-o existe un valor inseguro, se cierra mostrando el motivo. Si la FAQ deja de
-estar disponible mientras el bot funciona, la consulta se deriva de forma
-segura en vez de quedar sin respuesta.
-
-También se validan el formato de `OPENAI_MODEL`, el límite de salida y el tiempo
-de espera (entero de 1 a 120000 milisegundos). La validación local no comprueba
-si la cuenta tiene acceso al modelo: eso se confirma al hacer una consulta.
-Si OpenAI agota el límite de salida, no se envía el texto incompleto y se deriva
-la consulta. Los errores de la API muestran el código HTTP sin copiar cuerpos
-de respuesta que puedan contener datos privados.
+El bot valida los valores al iniciar. Si falta un dato obligatorio o una FAQ,
+se detiene mostrando el motivo. Los errores de OpenAI no exponen el cuerpo de la
+respuesta y una salida incompleta se deriva a atención humana.
 
 ## Panel de control local
 
