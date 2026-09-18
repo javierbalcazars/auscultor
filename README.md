@@ -13,6 +13,18 @@ encendido, conectado a Internet y sin suspender ni cerrar el proceso durante el
 horario en que se espera atención automática. Para una operación continua se
 recomienda un equipo exclusivo y ejecutar el programa como servicio de `systemd`.
 
+### Panel de escritorio incluido
+
+La versión 1.5.2 incorpora un panel web local pensado para usuarios que prefieren
+administrar el bot como una aplicación de escritorio. Desde una sola pantalla se
+puede completar la configuración, elegir el modelo de OpenAI, administrar
+encargados y números ignorados, ajustar tiempos y límites, iniciar o detener el
+bot, escanear el QR y comprobar su estado.
+
+El panel funciona únicamente en el PC donde está instalado el proyecto. No es un
+servicio en Internet ni envía la configuración a otro servidor. En Linux se puede
+abrir mediante un único lanzador de escritorio generado por el proyecto.
+
 ## Cómo funciona
 
 1. Se conecta a WhatsApp mediante un código QR, como WhatsApp Web.
@@ -184,32 +196,76 @@ de respuesta que puedan contener datos privados.
 
 ## Panel de control local
 
-El proyecto incluye un panel para configurar, iniciar y detener el bot sin
-editar `.env` manualmente:
+El panel permite utilizar las funciones principales sin abrir `.env`, ejecutar
+comandos repetidamente ni buscar el QR en una terminal. El navegador presenta la
+interfaz, mientras un pequeño servidor local realiza de forma segura las lecturas
+y escrituras necesarias dentro del proyecto.
+
+### Abrir el panel
+
+La forma directa es ejecutar:
 
 ```bash
 npm run admin
 ```
 
-Luego abre `http://127.0.0.1:3210` en el mismo equipo. El panel escucha
-exclusivamente en la interfaz local, no devuelve la API key guardada y bloquea
-los campos mientras el bot está funcionando.
+Luego abre `http://127.0.0.1:3210` en el mismo equipo.
 
-Los indicadores muestran por separado si el bot está encendido, si WhatsApp
-está vinculado y si la clave y el modelo de OpenAI son accesibles. Cuando no
-existe una sesión, el QR aparece dentro del panel. En la pestaña **Avanzado** se
-puede desvincular este equipo y generar un QR nuevo mediante una acción con
-confirmación.
-
-Cada guardado conserva hasta diez respaldos privados de `.env` dentro de
-`.local/config-backups`. En escritorios Linux se puede generar un lanzador local:
+Para disponer de un solo archivo que inicie el servidor y abra el navegador,
+genera el lanzador de escritorio:
 
 ```bash
 ./scripts/install-desktop-launcher.sh
 ```
 
-Si el proyecto cambia de carpeta, ejecuta nuevamente ese comando para actualizar
-la ruta del lanzador.
+Después puedes abrir `Abrir panel.desktop` con doble clic. Si mueves o renombras
+la carpeta del proyecto, ejecuta nuevamente el instalador para actualizar la
+ruta. El lanzador usa `systemd --user` cuando está disponible y recurre a un
+proceso local independiente en otros entornos.
+
+### Qué se puede administrar
+
+El panel se organiza en cuatro pestañas:
+
+- **General:** nombre del negocio, ruta del Vault, API key y modelo de OpenAI.
+  Incluye nueve modelos predefinidos, ordenados por nombre, y una opción manual.
+- **Personas:** uno o más asistentes humanos y números que el bot debe ignorar.
+- **Tiempos y límites:** demora de respuesta, umbral de audios, pausa por atención
+  humana, retención de chats y límites de frecuencia.
+- **Avanzado:** historial, tamaño de entrada, tokens, tiempos técnicos y la acción
+  confirmada para desvincular WhatsApp y generar un QR nuevo.
+
+El botón de la parte superior inicia y detiene el proceso. Mientras el bot está
+encendido, los campos quedan bloqueados y en color gris para impedir que se
+guarde una configuración que el proceso todavía no puede aplicar.
+
+### Estados visibles
+
+| Indicador | Estado | Significado |
+| --- | --- | --- |
+| Bot | Verde | Bot encendido. |
+| Bot | Rojo | Bot apagado. |
+| WhatsApp | Verde | El equipo conserva una sesión vinculada. Permanece verde aunque el bot esté apagado. |
+| WhatsApp | Amarillo | Iniciando sesión o esperando que se escanee el QR. |
+| WhatsApp | Rojo | No existe una sesión vinculada o WhatsApp cerró la sesión. |
+| OpenAI API | Verde | La clave fue aceptada y el modelo configurado es accesible. |
+| OpenAI API | Rojo | Debes revisar la clave, el modelo o la conexión. |
+
+El QR se muestra solamente cuando hace falta vincular una cuenta. Desaparece al
+completarse la conexión. La opción **Desvincular y generar QR nuevo** detiene el
+bot, elimina la sesión local después de una confirmación y vuelve a iniciarlo
+para presentar otro código.
+
+### Seguridad y respaldos
+
+El panel escucha exclusivamente en `127.0.0.1`, valida el origen de las acciones,
+utiliza un token CSRF y nunca devuelve al navegador la API key guardada. La
+comprobación de OpenAI consulta el acceso al modelo, pero no envía conversaciones
+ni garantiza el saldo disponible para solicitudes posteriores.
+
+Cada guardado valida todos los campos, escribe `.env` con permisos privados y
+conserva hasta diez respaldos en `.local/config-backups`. Los estados y registros
+del panel también se guardan dentro de `.local`, que queda fuera de Git.
 
 ## Primer inicio y vinculación
 
