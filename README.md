@@ -444,6 +444,8 @@ copiar `.env.example` ni la FAQ genérica sobre una instalación configurada.
 
 ## Licencia
 
+Copyright (C) 2026 Javier Balcazar
+
 Este proyecto se distribuye bajo la **GNU Affero General Public License v3.0 o
 posterior** (`AGPL-3.0-or-later`). Puedes usar, estudiar, modificar y redistribuir
 el programa bajo sus condiciones. Si ofreces una versión modificada para que
