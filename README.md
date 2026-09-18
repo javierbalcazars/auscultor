@@ -13,57 +13,29 @@ encendido, conectado a Internet y sin suspender ni cerrar el proceso durante el
 horario en que se espera atención automática. Para una operación continua se
 recomienda un equipo exclusivo y ejecutar el programa como servicio de `systemd`.
 
-### Panel de escritorio incluido
-
-La versión 1.5.2 incorpora un panel web local pensado para usuarios que prefieren
-administrar el bot como una aplicación de escritorio. Desde una sola pantalla se
-puede completar la configuración, elegir el modelo de OpenAI, administrar
-encargados y números ignorados, ajustar tiempos y límites, iniciar o detener el
-bot, escanear el QR y comprobar su estado.
-
-El panel funciona únicamente en el PC donde está instalado el proyecto. No es un
-servicio en Internet ni envía la configuración a otro servidor. En Linux se puede
-abrir mediante un único lanzador de escritorio generado por el proyecto.
+La versión 1.5.2 incluye un panel local pensado para usar el bot como una
+aplicación de escritorio. Desde una sola pantalla se configura el negocio, se
+inicia o detiene el bot, se escanea el QR y se comprueba WhatsApp y OpenAI.
 
 ## Cómo funciona
 
-1. Se conecta a WhatsApp mediante un código QR, como WhatsApp Web.
-2. Valida durante 3 segundos las sesiones cifradas antes de activar la atención.
-   Si encuentra una sesión dañada, aparta solamente sus archivos en una
-   cuarentena privada y reconecta con claves nuevas.
-   Los mensajes históricos que WhatsApp sincronice durante esta validación no
-   se procesan; un mensaje realmente enviado mientras inicia queda en espera.
-3. Espera 4 segundos sin mensajes nuevos y agrupa los textos consecutivos del
-   mismo contacto.
-4. Carga la FAQ completa de `Vault/FAQs` y la entrega a OpenAI junto con el
-   historial reciente del mismo chat. OpenAI interpreta directamente la frase,
-   sus errores ortográficos y el contexto de la conversación; no existe un
-   buscador ni un filtro previo por palabras.
-5. OpenAI responde utilizando solamente la información confirmada de la FAQ.
-6. Responde al cliente y registra la conversación en `Vault/Chats`.
-7. Si falta información, existe un reclamo o se necesita una acción manual,
-   avisa al encargado y pausa la automatización para ese contacto.
+1. El bot se conecta a WhatsApp como un dispositivo vinculado.
+2. Agrupa los mensajes consecutivos de cada contacto para responder una sola vez.
+3. Consulta la información confirmada guardada en `Vault/FAQs` y el historial
+   reciente de esa conversación.
+4. OpenAI redacta una respuesta usando únicamente esa información.
+5. El bot responde y guarda el registro privado en `Vault/Chats`.
+6. Si faltan datos, hay un reclamo o se necesita una acción manual, avisa a los
+   encargados y pausa la respuesta automática para ese contacto.
 
-Cada contacto tiene una cola independiente. Los mensajes de una misma persona se
-procesan en orden, mientras contactos distintos pueden atenderse en paralelo.
-OpenAI recibe como máximo 10 mensajes del mismo chat, incluida la consulta
-actual, para comprender preguntas de seguimiento. El prompt con la FAQ completa
-se envía por separado y no cuenta como uno de esos 10 mensajes.
+Admite textos y descripciones incluidas en imágenes, videos o documentos. Los
+audios de 10 segundos o más se reenvían a los encargados; los más cortos deben
+enviarse por escrito. Ignora grupos, estados, canales, difusiones, reacciones y
+mensajes duplicados.
 
-El bot admite texto simple, respuestas citadas, textos de imágenes, videos y
-documentos, además de respuestas de botones o listas. No transcribe audios: si
-duran menos de 10 segundos o WhatsApp no informa su duración, solicita que la
-consulta sea escrita; si duran 10 segundos o más, los reenvía al encargado y
-deriva el chat. Para evitar referencias cifradas inválidas, el audio se descarga
-a memoria RAM y se envía como una nota de voz nueva, sin guardarlo en el disco.
-Las ubicaciones, contactos y archivos sin descripción se derivan a atención
-humana. Los audios largos se reenvían incluso si la consulta supera un límite
-de texto o de frecuencia. Se ignoran grupos, estados, canales, difusiones, reacciones y mensajes
-duplicados.
-
-> Este proyecto usa Baileys, una conexión no oficial con WhatsApp. Es adecuada
-> para pruebas y volúmenes pequeños, pero para un servicio crítico conviene
-> evaluar la API oficial de WhatsApp Business.
+> La conexión utiliza Baileys y no la API oficial de WhatsApp Business. Es
+> apropiada para proyectos pequeños, pero puede requerir ajustes si WhatsApp
+> cambia su funcionamiento interno.
 
 ## Instalación
 
@@ -128,66 +100,22 @@ recomienda `v24`; el archivo `.nvmrc` selecciona esa versión al ejecutar
 
 ### Instalación del proyecto
 
-Descarga o clona el repositorio, entra en su carpeta e instala las dependencias:
+Clona el repositorio e instala las dependencias:
 
 ```bash
+git clone https://github.com/javierbalcazars/whatsapp-bot-git.git whatsapp-bot
 cd whatsapp-bot
 npm ci
-cp .env.example .env
+./scripts/install-desktop-launcher.sh
 ```
 
-La copia de `.env.example` se realiza solamente durante la primera instalación.
-En una actualización conserva siempre el `.env`, el Vault y la sesión existentes.
-Después abre el panel con `npm run admin`: es el método recomendado para completar
-y validar la configuración.
+El último comando crea `Abrir panel.desktop` en la carpeta del proyecto. Ábrelo
+con doble clic para configurar el bot. No necesitas crear ni editar `.env`
+manualmente: el panel lo genera al guardar por primera vez.
 
-<details>
-<summary>Referencia para configurar <code>.env</code> manualmente</summary>
-
-El panel administra estas mismas variables:
-
-- `OPENAI_API_KEY`: clave privada de OpenAI.
-- `BUSINESS_NAME`: nombre comercial que aparecerá en los mensajes y logs.
-- `OPENAI_MODEL`: modelo utilizado para generar las respuestas.
-- `VAULT_PATH`: ruta del Vault; el valor predeterminado es `./Vault`.
-- `CONVERSATIONS_FOLDER`: carpeta de registros; el valor predeterminado es `Chats`.
-- `CONVERSATION_EXPIRY_HOURS`: horas de inactividad antes de iniciar un contexto
-  nuevo, sin borrar el registro histórico.
-- `CONVERSATION_RETENTION_DAYS`: antigüedad para considerar un chat eliminable;
-  el valor predeterminado es `180` días. La eliminación requiere confirmación.
-- `MAX_HISTORY_MESSAGES`: cantidad máxima de turnos recientes enviados al modelo;
-  el valor predeterminado es `10`.
-- `MAX_STORED_MESSAGES`: cantidad máxima total de turnos conservados por chat,
-  contando mensajes recibidos y enviados; el valor predeterminado es `10`.
-- `RESPONSE_DELAY_MS`: espera sin mensajes nuevos; `4000` equivale a 4 segundos.
-- `SIGNAL_STARTUP_VALIDATION_MS`: tiempo de diagnóstico previo a activar el bot;
-  el valor predeterminado es `3000` milisegundos.
-- `AUDIO_FORWARD_MIN_SECONDS`: duración mínima para reenviar un audio al encargado;
-  el valor predeterminado es `10` segundos.
-- `OPENAI_TIMEOUT_MS`: espera máxima por una respuesta de OpenAI.
-- `OPENAI_MAX_OUTPUT_TOKENS`: máximo de tokens de salida, incluyendo el JSON
-  estructurado. Predeterminado: `600`; valores permitidos: `128` a `2048`.
-- `HUMAN_SUPPORT_NUMBERS`: uno o más números de encargados, con código de país
-  y separados por comas. Para instalaciones anteriores también se acepta
-  `HUMAN_SUPPORT_NUMBER` cuando no se define la lista nueva.
-- `HUMAN_ALERT_COOLDOWN_MINUTES`: tiempo mínimo entre alertas repetidas.
-- `HUMAN_TAKEOVER_HOURS`: horas de pausa automática desde una derivación; el
-  valor predeterminado es `2`.
-- `MAX_INPUT_CHARS`: largo máximo de una consulta enviada al modelo.
-- `MAX_BATCH_MESSAGES`: cantidad máxima de mensajes agrupados.
-- `MAX_REQUESTS_PER_HOUR`: máximo de consultas automáticas por contacto y hora.
-- `IGNORE_NUMBERS`: números que el bot debe ignorar, separados por comas.
-
-</details>
-
-Después de guardar la configuración, abre
-`Vault/FAQs/Información del Glamping.md` y reemplaza la información de ejemplo
-por datos confirmados de tu negocio. Puedes crear otros archivos `.md` dentro de
-`Vault/FAQs`; el bot carga todos los documentos de esa carpeta antes de responder.
-
-El bot valida los valores al iniciar. Si falta un dato obligatorio o una FAQ,
-se detiene mostrando el motivo. Los errores de OpenAI no exponen el cuerpo de la
-respuesta y una salida incompleta se deriva a atención humana.
+El repositorio incluye `.env.example` como referencia técnica y una FAQ genérica
+en `Vault/FAQs/Información del Glamping.md`. Conserva siempre tu `.env`, Vault y
+sesión de WhatsApp cuando actualices una instalación existente.
 
 ## Panel de control local
 
@@ -198,32 +126,27 @@ y escrituras necesarias dentro del proyecto.
 
 ### Abrir el panel
 
-La forma directa es ejecutar:
+Abre `Abrir panel.desktop` con doble clic. El lanzador inicia el servidor local y
+abre el navegador automáticamente. Si mueves o renombras la carpeta del proyecto,
+ejecuta nuevamente `./scripts/install-desktop-launcher.sh` para actualizar la ruta.
+
+<details>
+<summary>Abrir el panel desde una terminal</summary>
 
 ```bash
 npm run admin
 ```
 
-Luego abre `http://127.0.0.1:3210` en el mismo equipo.
+Luego visita `http://127.0.0.1:3210` en el mismo equipo.
 
-Para disponer de un solo archivo que inicie el servidor y abra el navegador,
-genera el lanzador de escritorio:
-
-```bash
-./scripts/install-desktop-launcher.sh
-```
-
-Después puedes abrir `Abrir panel.desktop` con doble clic. Si mueves o renombras
-la carpeta del proyecto, ejecuta nuevamente el instalador para actualizar la
-ruta. El lanzador usa `systemd --user` cuando está disponible y recurre a un
-proceso local independiente en otros entornos.
+</details>
 
 ### Qué se puede administrar
 
 El panel se organiza en cuatro pestañas:
 
 - **General:** nombre del negocio, ruta del Vault, API key y modelo de OpenAI.
-  Incluye nueve modelos predefinidos, ordenados por nombre, y una opción manual.
+  Incluye nueve modelos predefinidos y una opción manual.
 - **Personas:** uno o más asistentes humanos y números que el bot debe ignorar.
 - **Tiempos y límites:** demora de respuesta, umbral de audios, pausa por atención
   humana, retención de chats y límites de frecuencia.
@@ -262,150 +185,76 @@ Cada guardado valida todos los campos, escribe `.env` con permisos privados y
 conserva hasta diez respaldos en `.local/config-backups`. Los estados y registros
 del panel también se guardan dentro de `.local`, que queda fuera de Git.
 
-## Primer inicio y vinculación
+## Primer uso
 
-Antes de conectar WhatsApp, valida el código y la configuración:
+1. Abre `Abrir panel.desktop`.
+2. Completa las pestañas **General**, **Personas**, **Tiempos y límites** y
+   **Avanzado**, y guarda la configuración.
+3. Edita `Vault/FAQs/Información del Glamping.md` con información confirmada de
+   tu negocio. Puedes agregar otros documentos `.md` dentro de `Vault/FAQs`.
+4. Presiona **Iniciar bot** en la parte superior del panel.
+5. Si aparece un QR, escanéalo desde WhatsApp en **Dispositivos vinculados**.
 
-```bash
-npm run check
-npm run lint
-npm test
-```
-
-Después inicia el bot desde la raíz del proyecto:
-
-```bash
-npm start
-# o
-node src/index.js
-```
-
-Desde `src`:
-
-```bash
-node index.js
-```
-
-Las tres formas usan el `.env`, el Vault y `auth_session` ubicados en la raíz.
-Si no existe una sesión, abre WhatsApp en el teléfono, entra a Dispositivos
-vinculados y escanea el código QR mostrado en la consola.
-
-Cuando aparezca el mensaje de conexión, detén el proceso con `Ctrl+C` y ejecuta:
-
-```bash
-npm run diagnostics
-```
-
-El diagnóstico debe mostrar la configuración, el Vault, las FAQs y la sesión de
-WhatsApp como correctos. Antes de vincular el QR es normal que informe que la
-sesión todavía no existe.
-
-Las modificaciones posteriores en `Vault/FAQs` se leen al procesar cada consulta;
-no es necesario reinstalar dependencias ni reconstruir el proyecto.
+El indicador del bot cambia a verde cuando el proceso está encendido. WhatsApp
+queda amarillo mientras espera el QR y verde después de vincularse. Las FAQs se
+leen nuevamente con cada consulta, por lo que sus cambios no requieren reinstalar
+ni reiniciar el programa.
 
 ## Atención humana
 
-Cuando una consulta requiere intervención, el cliente recibe un mensaje de
-derivación y el encargado recibe el nombre disponible, identificador del chat,
-consulta, motivo y hora. El bot no intenta recuperar ni compartir el número
-telefónico del cliente. El archivo queda con
-`awaiting_human: true`, por lo que la IA no vuelve a responder durante esa
-conversación activa.
+Cuando una consulta necesita intervención, el cliente recibe un aviso y los
+encargados configurados reciben el nombre disponible, identificador del chat,
+consulta, motivo y hora. La respuesta automática queda pausada para ese contacto
+durante el tiempo configurado.
 
-Cada alerta se guarda antes de enviarse en `data/pending-human-alerts.json`, con
-permisos privados y escritura atómica. Si el envío falla, se reintenta cada minuto
-y al reconectar WhatsApp. Si el programa o el equipo se reinician, los avisos
-pendientes se recuperan y envían al conectar, sin esperar otro mensaje del cliente.
-La hora del aviso corresponde a la consulta original y la pausa se guarda antes
-de intentar notificar. Solo se mantiene el aviso pendiente más reciente por chat.
+Los avisos pendientes se guardan antes de enviarse y se recuperan después de una
+desconexión o reinicio. Si existen varios encargados, el bot recuerda cuáles ya
+recibieron el aviso para no notificarlos nuevamente durante un reintento.
 
-La cola evita envíos simultáneos de una misma alerta. Una interrupción justo
-después de que WhatsApp la acepte y antes de guardar la confirmación todavía
-puede producir un aviso repetido al reiniciar. Si el archivo de pendientes está
-dañado, el arranque se detiene con un error visible y lo conserva para diagnóstico.
-Los audios siguen procesándose solo en RAM: su reenvío no se recupera tras un
-reinicio; esta persistencia corresponde al aviso de texto para el encargado.
+Si alguien responde manualmente desde el WhatsApp del negocio, el bot cancela la
+respuesta automática que estuviera preparando y registra la intervención.
 
-Los mensajes normales también tienen entrega de al menos una vez: si WhatsApp
-acepta un envío y la conexión se corta antes de devolver la confirmación, el
-reintento puede producir excepcionalmente un mensaje duplicado. Mantener el
-reintento evita perder respuestas durante fallos breves de conexión.
+## Información del negocio y conversaciones
 
-Si el encargado responde manualmente desde el WhatsApp del glamping antes que el
-bot, el lote pendiente o la respuesta que OpenAI esté preparando se cancela y el
-mensaje se registra como `Encargado`.
-La automatización se habilita nuevamente dos horas después de la derivación. Los
-mensajes posteriores del cliente o del encargado no reinician ese plazo. El bot
-no puede observar la conversación que el encargado mantenga desde su número
-personal. Los mensajes enviados desde el WhatsApp del glamping a contactos que
-no tengan una conversación administrada por el bot se ignoran y no generan
-archivos en `Vault/Chats`. También se ignoran mensajes manuales antiguos recibidos
-durante la sincronización inicial: solo se registra una respuesta posterior al
-inicio actual cuando existe una derivación activa o un mensaje pendiente. Este
-registro no genera una línea adicional en la consola.
+`Vault/FAQs` contiene la información autorizada que el bot puede usar al
+responder. La plantilla incluida debe reemplazarse con datos confirmados del
+negocio. No guardes allí claves, datos de pago ni información privada de clientes.
 
-## Organización del Vault
+`Vault/Chats` contiene las conversaciones privadas y nunca se utiliza como fuente
+de respuestas. Ningún chat se elimina automáticamente.
 
-Las respuestas autorizadas de cada instalación viven en los documentos Markdown
-de `Vault/FAQs`. El repositorio incluye
-`Vault/FAQs/Información del Glamping.md`, una plantilla genérica sin datos reales
-para completar con la información confirmada de cada negocio.
-`Vault/Chats` contiene datos privados de clientes y nunca se utiliza como fuente
-de respuestas.
-
-### Retención y eliminación de chats
-
-La política predeterminada considera eliminables los chats con más de 180 días
-desde su último mensaje. Ningún chat se borra automáticamente. Para revisar el
-estado sin modificar archivos:
+<details>
+<summary>Revisar o eliminar conversaciones antiguas</summary>
 
 ```bash
 npm run chats -- list
 npm run chats -- prune
-```
-
-El segundo comando muestra qué archivos se eliminarían. Para confirmar la
-limpieza o eliminar una conversación específica:
-
-```bash
 npm run chats -- prune --apply
-npm run chats -- delete 569XXXXXXXX@s.whatsapp.net --apply
 ```
 
-Sin `--apply`, cualquier operación de eliminación es solo una simulación.
+Los dos primeros comandos no eliminan archivos. La eliminación exige `--apply`.
 
-No escribas en las FAQs claves, credenciales, datos de pago ni información
-privada de huéspedes. Toda información marcada como pendiente provoca una
-derivación humana y nunca debe ser inventada por el bot.
-
-Los documentos internos con información pendiente deben mantenerse localmente,
-por ejemplo en `docs/private/` o en un archivo ignorado por Git. Deben permanecer
-fuera de `Vault/FAQs` para que el bot no los utilice como respuestas confirmadas.
+</details>
 
 ## Seguridad y datos privados
 
-- `.env`, otros archivos `.env.*` (excepto `.env.example`), `auth_session`, todo
-  el `Vault` real, `data` y la documentación privada están excluidos de Git. La
-  copia pública sí incluye un `Vault/FAQs` genérico y rellenable.
-- `.env`, las credenciales y los chats usan permisos privados en el equipo.
-- Un candado local impide que dos procesos utilicen simultáneamente la misma
-  carpeta `auth_session`; un candado obsoleto se limpia en el siguiente inicio.
-- Los mensajes internos de `libsignal` que contienen claves temporales no se
-  imprimen porque pueden exponer material sensible. Durante el arranque, el bot
-  identifica el dispositivo exacto que produjo un `MessageCounterError` o
-  `BadMACError`, mueve solamente sus archivos de sesión a
-  `auth_session/.session-repair-quarantine` y reconecta antes de atender. La
-  reparación admite dos intentos por dispositivo para evitar ciclos infinitos;
-  si el problema continúa, informa el error de manera segura y visible. Se
-  conservan como máximo las cuatro cuarentenas más recientes; cuando se crea una
-  quinta, se elimina automáticamente la más antigua.
-- Los cambios se realizan directamente en la carpeta local del proyecto.
-- Nunca copies `.env`, `auth_session`, `data` ni `Vault/Chats` dentro de otro
-  proyecto o repositorio, aunque sea privado.
-- Si una clave pudiera haber salido del equipo, revócala y genera una nueva.
-- Cualquier respaldo de datos privados debe guardarse cifrado y por separado.
+- `.env`, `auth_session`, `Vault/Chats`, `data`, `.local` y los documentos
+  privados están excluidos de Git.
+- La configuración, sesión y conversaciones se guardan con permisos privados.
+- Un candado impide que dos procesos utilicen simultáneamente la misma sesión.
+- La API key nunca se devuelve al navegador ni se imprime en los logs.
+- Los errores criptográficos se registran sin mostrar claves temporales.
 
-## Verificación
+Conserva respaldos cifrados de tus datos privados. Si una API key pudiera haber
+salido del equipo, revócala y genera otra.
+
+## Verificación técnica
+
+El repositorio se valida automáticamente en GitHub con Node 24 y 26. Para revisar
+manualmente una instalación local:
+
+<details>
+<summary>Comandos de diagnóstico y pruebas</summary>
 
 ```bash
 npm run check
@@ -415,123 +264,61 @@ npm audit --omit=dev
 npm run diagnostics
 ```
 
-`npm run check` valida la sintaxis, `npm run lint` detecta errores estáticos y
-`npm run diagnostics` comprueba localmente configuración, permisos, sesión,
-Vault, FAQs, retención y umbral de audios sin llamar a OpenAI ni WhatsApp.
-`npm test` comprueba configuración,
-persistencia, seguridad del historial, contexto completo de las FAQs, tipos de
-mensajes, reintentos de alertas, deduplicación y límites de uso. Incluye procesos
-aislados que ejecutan `src/index.js` con WhatsApp y OpenAI simulados: agrupación,
-seguimiento, máximo de historial, intervención manual, audios y recuperación de
-avisos después de una terminación abrupta. Las pruebas no envían mensajes reales
-ni consumen tokens de OpenAI.
+Estas pruebas no envían mensajes reales ni consumen tokens de OpenAI. El
+diagnóstico revisa configuración, permisos, sesión, Vault, FAQs, retención y
+umbral de audios.
 
-El workflow `.github/workflows/ci.yml` ejecuta sintaxis, lint, pruebas y auditoría
-de dependencias con Node 24 y 26 cuando el proyecto público recibe un push o pull
-request. Una vulnerabilidad detectada hace fallar su comprobación correspondiente.
+</details>
 
-Los logs incluyen identificadores de contacto parcialmente ocultos y la duración
-de cada solicitud a OpenAI, lo que permite detectar lentitud sin imprimir la
+Los logs ocultan parcialmente los identificadores de contacto y no imprimen la
 consulta del cliente ni el contenido de las FAQs.
 
 ## Funcionamiento continuo con systemd
 
-`deploy/whatsapp-bot.service` utiliza `[USER]` como marcador. Antes de instalarlo,
-reemplaza todas sus apariciones por el usuario Linux que ejecutará el bot. Comprueba
-también `node --version` y `command -v node`: `ExecStart` debe usar la ruta absoluta
-del Node 24 LTS instalado (con nvm no suele ser `/usr/bin/node`).
+El uso normal de escritorio se controla desde el panel. Para un PC dedicado que
+deba iniciar el bot automáticamente al encenderse, el repositorio incluye
+`deploy/whatsapp-bot.service`.
 
-Vincular WhatsApp primero con `npm start` y detenerlo con Ctrl+C. Luego:
+<details>
+<summary>Instalación opcional del servicio permanente</summary>
+
+Reemplaza `[USER]` en el archivo por el usuario Linux que ejecutará el bot y
+confirma la ruta mostrada por `command -v node`. Después instala el servicio:
 
 ```bash
 sudo install -m 644 deploy/whatsapp-bot.service /etc/systemd/system/whatsapp-bot.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now whatsapp-bot.service
 sudo systemctl status whatsapp-bot.service
-sudo journalctl -u whatsapp-bot.service -n 100 --no-pager
 ```
 
-El servicio se inicia al encender el equipo y reinicia el proceso tras un fallo,
-con una espera de 15 segundos. Se limita a cinco arranques en cinco minutos para
-evitar ciclos por una configuración inválida o una sesión que requiere intervención.
-Después de corregir un fallo repetido, ejecutar `sudo systemctl reset-failed
-whatsapp-bot.service` y `sudo systemctl start whatsapp-bot.service`.
-
-Mientras el servicio esté activo, no iniciar otra copia con `npm start`. Para
-actualizar: detenerlo con `sudo systemctl stop whatsapp-bot.service`, aplicar los
-cambios directamente en este proyecto, actualizar dependencias con `npm ci`,
-ejecutar las verificaciones y arrancarlo otra vez. Los logs quedan en journald,
-cuya retención administra el sistema. Este repositorio incluye el servicio
-permanente listo para adaptar, pero no lo instala ni lo activa automáticamente.
-El archivo usa el marcador `[USER]` para evitar publicar rutas de un equipo
-particular. Su estructura fue validada con `systemd-analyze verify`; cada usuario
-debe reemplazar el marcador y comprobar el inicio automático en su propio sistema.
-
-## Uso diario
-
-Los comandos principales cuando se utiliza `systemd` son:
+Para consultar los logs:
 
 ```bash
-sudo systemctl status whatsapp-bot.service
-sudo systemctl restart whatsapp-bot.service
-sudo systemctl stop whatsapp-bot.service
-sudo systemctl start whatsapp-bot.service
 sudo journalctl -u whatsapp-bot.service -f
 ```
 
-No ejecutes `npm start` mientras el servicio esté activo: el candado del proyecto
-impide que dos procesos utilicen simultáneamente la misma sesión de WhatsApp.
+No inicies el bot desde el panel mientras el servicio esté activo. El archivo se
+incluye como plantilla validada, pero cada usuario debe comprobarlo en su propio
+equipo.
 
-Para actualizar una instalación existente:
-
-```bash
-sudo systemctl stop whatsapp-bot.service
-npm ci
-npm run check
-npm run lint
-npm test
-npm run diagnostics
-sudo systemctl start whatsapp-bot.service
-```
-
-Conserva el `.env`, `Vault`, `auth_session` y `data` existentes. No vuelvas a
-copiar `.env.example` ni la FAQ genérica sobre una instalación configurada.
+</details>
 
 ## Problemas frecuentes
 
-- **No aparece el QR:** elimina la sesión solamente si deseas desvincular el
-  dispositivo y volver a enlazarlo. Antes revisa los logs, porque borrar
-  `auth_session` obliga a escanear un QR nuevo.
+- **No aparece el QR:** el QR solo aparece cuando no existe una sesión. Para
+  cambiar de cuenta, usa **Avanzado → Desvincular y generar QR nuevo**.
 - **OpenAI rechaza una consulta:** comprueba la API key, el modelo, la facturación
   y los límites de la cuenta. `npm run diagnostics` valida el formato local, pero
   no realiza una consulta pagada.
 - **WhatsApp está desconectado:** revisa Internet y los logs. El bot intenta
   reconectarse automáticamente.
-- **El servicio falla repetidamente:** corrige primero el error mostrado y ejecuta
-  `sudo systemctl reset-failed whatsapp-bot.service` antes de iniciarlo nuevamente.
 - **Las respuestas no contienen información nueva:** confirma que el dato esté
   guardado como información válida dentro de `Vault/FAQs` y no en `Vault/Chats`.
-- **El diagnóstico informa que falta la sesión:** inicia el bot manualmente y
-  vincula WhatsApp mediante el código QR.
+- **WhatsApp aparece en rojo:** presiona **Iniciar bot** y escanea el QR que
+  mostrará el panel.
 - **Se necesita eliminar chats antiguos:** usa primero `npm run chats -- prune`.
   El borrado solo ocurre cuando se repite el comando con `--apply`.
-
-## Características de la versión 1.5.2
-
-- Servicio permanente de `systemd` incluido para funcionamiento 24/7, con
-  instalación opcional y manual.
-- Panel local para configurar, iniciar, detener y revincular el bot.
-- Estados separados para el proceso, la sesión de WhatsApp y OpenAI.
-- Compatibilidad con varios encargados y reintentos sin duplicar avisos ya entregados.
-- Reenvío de audios de 10 segundos o más al encargado.
-- Gestión segura y confirmada de retención de conversaciones.
-- Diagnóstico local, ESLint y verificación continua para Node 24 y 26.
-- Cola independiente por contacto, seguridad de carpetas y registros operativos.
-- Configuración genérica mediante `VAULT_PATH`.
-- Instrucciones para Arch Linux, Debian/Ubuntu y Fedora.
-- Persistencia de alertas humanas y recuperación después de reinicios.
-- Protección frente a sesiones cifradas dañadas y procesos duplicados.
-- Compatibilidad con modelos GPT-5 que no admiten el parámetro `temperature`.
 
 ## Licencia
 
