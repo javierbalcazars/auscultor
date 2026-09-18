@@ -47,7 +47,7 @@ export function createHumanAlertRetryQueue({
 
     const promise = Promise.resolve().then(async () => {
       try {
-        await deliver(payload);
+        await deliver(payload, persist);
       } catch (error) {
         onFailure(payload, error);
         return { sent: false, error };

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Configuración · WhatsApp Bot</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="logo">W</span><div><strong>WhatsApp Bot</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">Iniciar bot</button></div></header>
+  <main>
+    <section class="hero"><div><p class="eyebrow">CONFIGURACIÓN DEL ASISTENTE</p><h1>Panel de Control</h1><p>Los cambios se guardan en <code>.env</code>. Reinicia el bot después de guardar para aplicarlos.</p></div><div class="control-stack"><div id="health-panel" class="health-panel" aria-live="polite"><div><span id="bot-process-led" class="health-led checking"></span><p><b>Bot</b><small>Comprobando proceso…</small></p></div><div><span id="whatsapp-led" class="health-led checking"></span><p><b>WhatsApp</b><small>Comprobando sesión…</small></p></div><div><span id="openai-led" class="health-led checking"></span><p><b>OpenAI API</b><small>Comprobando clave…</small></p></div></div></div></section>
+    <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre></div></section>
+    <form id="config-form">
+      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="general" class="active">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="avanzado">Avanzado</button></nav>
+      <section id="general" class="panel active"><div class="section-title"><h2>General</h2><p>Identidad, datos y conexión con OpenAI.</p></div><div class="grid">
+        <label><span>Nombre del negocio</span><input name="BUSINESS_NAME" maxlength="100" required><small>Se utiliza en mensajes y registros.</small></label>
+        <label><span>Ruta de datos</span><input name="VAULT_PATH" required><small>Carpeta que contiene FAQs y Chats.</small></label>
+        <label class="wide"><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="••••••••••••••••"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Déjala vacía para conservar la clave guardada.</small></label>
+        <label><span>Modelo de OpenAI</span>
+          <select id="model-select">
+            <option value="gpt-4o-mini">GPT-4o mini (muy rápido)</option>
+            <option value="gpt-4o">GPT-4o (equilibrado)</option>
+            <option value="gpt-4.1-mini">GPT-4.1 mini (rápido)</option>
+            <option value="gpt-4.1">GPT-4.1 (potente)</option>
+            <option value="gpt-5-nano">GPT-5 nano (muy rápido)</option>
+            <option value="gpt-5-mini">GPT-5 mini (rápido)</option>
+            <option value="gpt-5">GPT-5 (más potente, más lento)</option>
+            <option value="gpt-5.4-nano">GPT-5.4 nano (muy rápido)</option>
+            <option value="gpt-5.4-mini">GPT-5.4 mini (rápido y potente)</option>
+            <option value="manual">Otro modelo (manual)</option>
+          </select>
+          <input id="manual-model" name="OPENAI_MODEL" class="hidden" placeholder="Ejemplo: gpt-4o-mini" required>
+          <small id="model-help">Modelo muy rápido y económico para consultas frecuentes.</small>
+        </label>
+        <input name="CONVERSATIONS_FOLDER" type="hidden" value="Chats">
+      </div></section>
+      <section id="personas" class="panel"><div class="section-title"><h2>Personas y números</h2><p>Un número por línea, incluyendo el código del país.</p></div><div class="grid">
+        <label><span>Asistentes humanos</span><textarea name="HUMAN_SUPPORT_NUMBERS" rows="8" required></textarea><small>Las alertas y audios se enviarán a estos números.</small></label>
+        <label><span>Números ignorados o bloqueados</span><textarea name="IGNORE_NUMBERS" rows="8"></textarea><small>El bot no responderá mensajes de estos números.</small></label>
+      </div></section>
+      <section id="tiempos" class="panel"><div class="section-title"><h2>Tiempos y límites</h2><p>Ajusta el ritmo de respuesta y la intervención humana.</p></div><div class="grid numeric">
+        <label><span>Espera antes de responder (milisegundos)</span><div class="unit"><input name="RESPONSE_DELAY_MS" type="number" min="0" step="1" required><em>ms</em></div><small>1000 ms equivalen a 1 segundo.</small></label>
+        <label><span>Reenviar audios desde (segundos)</span><div class="unit"><input name="AUDIO_FORWARD_MIN_SECONDS" type="number" min="1" step="1" required><em>seg</em></div></label>
+        <label><span>Pausa por atención humana (horas)</span><div class="unit"><input name="HUMAN_TAKEOVER_HOURS" type="number" min="0.1" step="0.1" required><em>horas</em></div></label>
+        <label><span>Intervalo entre alertas (minutos)</span><div class="unit"><input name="HUMAN_ALERT_COOLDOWN_MINUTES" type="number" min="0" step="0.1" required><em>min</em></div></label>
+        <label><span>Expiración de conversación (horas)</span><div class="unit"><input name="CONVERSATION_EXPIRY_HOURS" type="number" min="0.1" step="0.1" required><em>horas</em></div></label>
+        <label><span>Retención de chats (días)</span><div class="unit"><input name="CONVERSATION_RETENTION_DAYS" type="number" min="1" max="3650" required><em>días</em></div></label>
+        <label><span>Solicitudes por hora</span><input name="MAX_REQUESTS_PER_HOUR" type="number" min="1" required></label>
+        <label><span>Mensajes por lote</span><input name="MAX_BATCH_MESSAGES" type="number" min="1" required></label>
+      </div></section>
+      <section id="avanzado" class="panel"><div class="section-title"><h2>Opciones avanzadas</h2><p>Límites técnicos para contexto, salida y diagnóstico.</p></div><div class="grid numeric">
+        <label><span>Historial enviado</span><input name="MAX_HISTORY_MESSAGES" type="number" min="1" required></label><label><span>Historial almacenado</span><input name="MAX_STORED_MESSAGES" type="number" min="1" required></label>
+        <label><span>Máximo de caracteres</span><input name="MAX_INPUT_CHARS" type="number" min="500" required></label><label><span>Tokens de salida</span><input name="OPENAI_MAX_OUTPUT_TOKENS" type="number" min="128" max="2048" required></label>
+        <label><span>Espera máxima de OpenAI (milisegundos)</span><div class="unit"><input name="OPENAI_TIMEOUT_MS" type="number" min="1" max="120000" required><em>ms</em></div><small>30000 ms equivalen a 30 segundos.</small></label><label><span>Validación al iniciar (milisegundos)</span><div class="unit"><input name="SIGNAL_STARTUP_VALIDATION_MS" type="number" min="500" required><em>ms</em></div><small>3000 ms equivalen a 3 segundos.</small></label>
+        <div class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Desconecta este equipo y elimina su sesión local. El bot se reiniciará y mostrará un QR nuevo.</p></div><button id="reset-whatsapp" class="danger-button" type="button">Desvincular y generar QR nuevo</button></div>
+      </div></section>
+      <footer class="actions"><p id="message" role="status"></p><button id="save" class="primary" type="submit">Guardar configuración</button></footer>
+    </form>
+  </main>
+  <script src="/app.js" defer></script>
+</body>
+</html>

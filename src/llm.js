@@ -84,50 +84,52 @@ export async function askLLM(conversationHistory, context, {
   const timeout = setTimeout(() => controller.abort(), openAiTimeoutMs);
 
   try {
+    const requestBody = {
+      model: openAiModel,
+      max_completion_tokens: openAiMaxOutputTokens,
+      messages: [
+        {
+          role: "system",
+          content: buildSystemPrompt(context),
+        },
+        ...safeConversationHistory,
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "glamping_support_response",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              reply: {
+                type: "string",
+                description: "Respuesta breve y cordial para el cliente cuando existe información suficiente.",
+              },
+              needs_human: {
+                type: "boolean",
+                description: "Indica si la consulta debe ser revisada por una persona del equipo.",
+              },
+              handoff_reason: {
+                type: "string",
+                description: "Motivo breve de la derivación. Debe quedar vacío si no se necesita atención humana.",
+              },
+            },
+            required: ["reply", "needs_human", "handoff_reason"],
+            additionalProperties: false,
+          },
+        },
+      },
+    };
+    if (!openAiModel.startsWith("gpt-5")) requestBody.temperature = 0.5;
+
     const response = await fetchImpl("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${openAiApiKey}`,
       },
-      body: JSON.stringify({
-        model: openAiModel,
-        max_completion_tokens: openAiMaxOutputTokens,
-        messages: [
-          {
-            role: "system",
-            content: buildSystemPrompt(context),
-          },
-          ...safeConversationHistory,
-        ],
-        temperature: 0.5,
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "glamping_support_response",
-            strict: true,
-            schema: {
-              type: "object",
-              properties: {
-                reply: {
-                  type: "string",
-                  description: "Respuesta breve y cordial para el cliente cuando existe información suficiente.",
-                },
-                needs_human: {
-                  type: "boolean",
-                  description: "Indica si la consulta debe ser revisada por una persona del equipo.",
-                },
-                handoff_reason: {
-                  type: "string",
-                  description: "Motivo breve de la derivación. Debe quedar vacío si no se necesita atención humana.",
-                },
-              },
-              required: ["reply", "needs_human", "handoff_reason"],
-              additionalProperties: false,
-            },
-          },
-        },
-      }),
+      body: JSON.stringify(requestBody),
       signal: controller.signal,
     });
 

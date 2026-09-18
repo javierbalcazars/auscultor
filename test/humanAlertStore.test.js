@@ -9,6 +9,7 @@ import { createHumanAlertRetryQueue } from "../src/humanAlertRetry.js";
 const alert = {
   remoteJid: "123456@lid", contactName: "Cliente", text: "Necesito cambiar la reserva",
   reason: "Revisión de disponibilidad", createdAt: "2026-09-16T15:30:00.000Z",
+  deliveredSupportJids: [],
 };
 const timers = { setTimer: () => ({ unref() {} }), clearTimer: () => {} };
 

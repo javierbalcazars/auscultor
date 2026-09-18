@@ -5,11 +5,15 @@ import { spawnSync } from "node:child_process";
 import { PROJECT_ROOT } from "../src/config.js";
 
 const directories = ["src", "scripts", "test"];
-const files = directories.flatMap((directory) =>
-  fs.readdirSync(path.join(PROJECT_ROOT, directory), { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".js"))
-    .map((entry) => path.join(PROJECT_ROOT, directory, entry.name))
-);
+function javascriptFiles(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) return javascriptFiles(target);
+    return entry.isFile() && entry.name.endsWith(".js") ? [target] : [];
+  });
+}
+
+const files = directories.flatMap((directory) => javascriptFiles(path.join(PROJECT_ROOT, directory)));
 
 for (const file of files) {
   const result = spawnSync(process.execPath, ["--check", file], { stdio: "inherit" });

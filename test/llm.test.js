@@ -26,6 +26,18 @@ test("envía el contexto completo y limita la salida sin llamadas reales", async
   assert.equal(reply.reply, "Unimarc está a 10 minutos.");
 });
 
+test("omite temperature en modelos GPT-5", async () => {
+  await askLLM([{ role: "user", content: "Hola" }], "FAQ", {
+    environment: { ...environment, OPENAI_MODEL: "gpt-5.4-mini" },
+    fetchImpl: async (_url, options) => {
+      const request = JSON.parse(options.body);
+      assert.equal(request.model, "gpt-5.4-mini");
+      assert.equal("temperature" in request, false);
+      return mockCompletion({ reply: "Hola", needs_human: false, handoff_reason: "" });
+    },
+  });
+});
+
 test("rechaza salidas truncadas aunque contengan JSON válido", async () => {
   await assert.rejects(askLLM([], "FAQ", {
     environment,

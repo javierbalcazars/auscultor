@@ -54,6 +54,22 @@ test("acepta una configuración segura y aplica valores predeterminados", (t) =>
   assert.equal(config.maxInputChars, 6000);
   assert.equal(config.maxHistoryMessages, 10);
   assert.equal(config.maxStoredMessages, 10);
+  assert.deepEqual(config.humanSupportJids, ["56912345678@s.whatsapp.net"]);
+});
+
+test("acepta varios asistentes humanos y elimina duplicados", (t) => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-config-"));
+  t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
+  addValidFaq(vault);
+  const config = loadRuntimeConfig({
+    ...validEnvironment(),
+    HUMAN_SUPPORT_NUMBER: "",
+    HUMAN_SUPPORT_NUMBERS: "+56 9 1234 5678,56987654321,56912345678",
+  }, vault);
+  assert.deepEqual(config.humanSupportJids, [
+    "56912345678@s.whatsapp.net",
+    "56987654321@s.whatsapp.net",
+  ]);
 });
 
 test("rechaza secretos ausentes, números inválidos y rutas inseguras", (t) => {

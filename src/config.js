@@ -77,9 +77,11 @@ export function loadRuntimeConfig(environment = process.env, vaultPath = VAULT_P
     throw new Error("BUSINESS_NAME debe contener un nombre de entre 1 y 100 caracteres, en una sola línea");
   }
 
-  const humanSupportNumber = (environment.HUMAN_SUPPORT_NUMBER || "").replace(/\D/g, "");
-  if (!/^\d{8,15}$/.test(humanSupportNumber)) {
-    throw new Error("HUMAN_SUPPORT_NUMBER debe contener entre 8 y 15 dígitos, incluido el código de país");
+  const humanSupportNumbers = (
+    environment.HUMAN_SUPPORT_NUMBERS || environment.HUMAN_SUPPORT_NUMBER || ""
+  ).split(",").map((number) => number.replace(/\D/g, "")).filter(Boolean);
+  if (humanSupportNumbers.length === 0 || humanSupportNumbers.some((number) => !/^\d{8,15}$/.test(number))) {
+    throw new Error("HUMAN_SUPPORT_NUMBERS debe contener uno o más números de 8 a 15 dígitos, incluido el código de país");
   }
 
   const conversationsFolder = environment.CONVERSATIONS_FOLDER || "Chats";
@@ -163,7 +165,7 @@ export function loadRuntimeConfig(environment = process.env, vaultPath = VAULT_P
       integer: true,
       min: 1,
     }),
-    humanSupportJid: `${humanSupportNumber}@s.whatsapp.net`,
+    humanSupportJids: [...new Set(humanSupportNumbers)].map((number) => `${number}@s.whatsapp.net`),
     humanAlertCooldownMs:
       readNumber(environment, "HUMAN_ALERT_COOLDOWN_MINUTES", 60, { min: 0 }) * 60 * 1000,
     humanTakeoverMs:

@@ -1,6 +1,6 @@
 # Asistente de WhatsApp para glampings
 
-Versión actual: **1.5.1**.
+Versión actual: **1.5.2**.
 
 Atiende consultas simples del público por WhatsApp usando las notas Markdown de
 `Vault/FAQs` como fuente de información. Cuando no existe una respuesta confirmada
@@ -153,7 +153,9 @@ Edita `.env` y configura:
 - `OPENAI_TIMEOUT_MS`: espera máxima por una respuesta de OpenAI.
 - `OPENAI_MAX_OUTPUT_TOKENS`: máximo de tokens de salida, incluyendo el JSON
   estructurado. Predeterminado: `600`; valores permitidos: `128` a `2048`.
-- `HUMAN_SUPPORT_NUMBER`: número del encargado, con código de país.
+- `HUMAN_SUPPORT_NUMBERS`: uno o más números de encargados, con código de país
+  y separados por comas. Para instalaciones anteriores también se acepta
+  `HUMAN_SUPPORT_NUMBER` cuando no se define la lista nueva.
 - `HUMAN_ALERT_COOLDOWN_MINUTES`: tiempo mínimo entre alertas repetidas.
 - `HUMAN_TAKEOVER_HOURS`: horas de pausa automática desde una derivación; el
   valor predeterminado es `2`.
@@ -179,6 +181,35 @@ si la cuenta tiene acceso al modelo: eso se confirma al hacer una consulta.
 Si OpenAI agota el límite de salida, no se envía el texto incompleto y se deriva
 la consulta. Los errores de la API muestran el código HTTP sin copiar cuerpos
 de respuesta que puedan contener datos privados.
+
+## Panel de control local
+
+El proyecto incluye un panel para configurar, iniciar y detener el bot sin
+editar `.env` manualmente:
+
+```bash
+npm run admin
+```
+
+Luego abre `http://127.0.0.1:3210` en el mismo equipo. El panel escucha
+exclusivamente en la interfaz local, no devuelve la API key guardada y bloquea
+los campos mientras el bot está funcionando.
+
+Los indicadores muestran por separado si el bot está encendido, si WhatsApp
+está vinculado y si la clave y el modelo de OpenAI son accesibles. Cuando no
+existe una sesión, el QR aparece dentro del panel. En la pestaña **Avanzado** se
+puede desvincular este equipo y generar un QR nuevo mediante una acción con
+confirmación.
+
+Cada guardado conserva hasta diez respaldos privados de `.env` dentro de
+`.local/config-backups`. En escritorios Linux se puede generar un lanzador local:
+
+```bash
+./scripts/install-desktop-launcher.sh
+```
+
+Si el proyecto cambia de carpeta, ejecuta nuevamente ese comando para actualizar
+la ruta del lanzador.
 
 ## Primer inicio y vinculación
 
@@ -344,9 +375,9 @@ seguimiento, máximo de historial, intervención manual, audios y recuperación 
 avisos después de una terminación abrupta. Las pruebas no envían mensajes reales
 ni consumen tokens de OpenAI.
 
-El workflow `.github/workflows/ci.yml` ejecuta sintaxis, lint y pruebas con Node
-24 y 26 cuando el proyecto público recibe un push o pull request. La auditoría
-de dependencias se informa por separado y no bloquea las demás verificaciones.
+El workflow `.github/workflows/ci.yml` ejecuta sintaxis, lint, pruebas y auditoría
+de dependencias con Node 24 y 26 cuando el proyecto público recibe un push o pull
+request. Una vulnerabilidad detectada hace fallar su comprobación correspondiente.
 
 Los logs incluyen identificadores de contacto parcialmente ocultos y la duración
 de cada solicitud a OpenAI, lo que permite detectar lentitud sin imprimir la
@@ -379,8 +410,11 @@ Mientras el servicio esté activo, no iniciar otra copia con `npm start`. Para
 actualizar: detenerlo con `sudo systemctl stop whatsapp-bot.service`, aplicar los
 cambios directamente en este proyecto, actualizar dependencias con `npm ci`,
 ejecutar las verificaciones y arrancarlo otra vez. Los logs quedan en journald,
-cuya retención administra el sistema. Este repositorio prepara el servicio, pero
-no lo instala ni lo activa automáticamente.
+cuya retención administra el sistema. Este repositorio incluye el servicio
+permanente listo para adaptar, pero no lo instala ni lo activa automáticamente.
+El archivo usa el marcador `[USER]` para evitar publicar rutas de un equipo
+particular. Su estructura fue validada con `systemd-analyze verify`; cada usuario
+debe reemplazar el marcador y comprobar el inicio automático en su propio sistema.
 
 ## Uso diario
 
@@ -431,8 +465,13 @@ copiar `.env.example` ni la FAQ genérica sobre una instalación configurada.
 - **Se necesita eliminar chats antiguos:** usa primero `npm run chats -- prune`.
   El borrado solo ocurre cuando se repite el comando con `--apply`.
 
-## Características de la versión 1.5.1
+## Características de la versión 1.5.2
 
+- Servicio permanente de `systemd` incluido para funcionamiento 24/7, con
+  instalación opcional y manual.
+- Panel local para configurar, iniciar, detener y revincular el bot.
+- Estados separados para el proceso, la sesión de WhatsApp y OpenAI.
+- Compatibilidad con varios encargados y reintentos sin duplicar avisos ya entregados.
 - Reenvío de audios de 10 segundos o más al encargado.
 - Gestión segura y confirmada de retención de conversaciones.
 - Diagnóstico local, ESLint y verificación continua para Node 24 y 26.
@@ -441,6 +480,7 @@ copiar `.env.example` ni la FAQ genérica sobre una instalación configurada.
 - Instrucciones para Arch Linux, Debian/Ubuntu y Fedora.
 - Persistencia de alertas humanas y recuperación después de reinicios.
 - Protección frente a sesiones cifradas dañadas y procesos duplicados.
+- Compatibilidad con modelos GPT-5 que no admiten el parámetro `temperature`.
 
 ## Licencia
 

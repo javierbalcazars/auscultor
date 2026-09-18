@@ -49,3 +49,30 @@ test("mantiene una sola alerta pendiente por chat y conserva la más reciente", 
   assert.deepEqual(deliveredTexts, ["Consulta actualizada"]);
   assert.equal(queue.size(), 0);
 });
+
+test("persiste el avance para no repetir destinatarios ya notificados", async () => {
+  const saved = [];
+  const recipients = ["56911111111@s.whatsapp.net", "56922222222@s.whatsapp.net"];
+  let secondAvailable = false;
+  const queue = createHumanAlertRetryQueue({
+    deliver: async (payload, persistProgress) => {
+      payload.deliveredSupportJids ||= [];
+      for (const recipient of recipients) {
+        if (payload.deliveredSupportJids.includes(recipient)) continue;
+        if (recipient === recipients[1] && !secondAvailable) throw new Error("sin conexión");
+        payload.deliveredSupportJids.push(recipient);
+        persistProgress();
+      }
+    },
+    store: { save: (alerts) => saved.push(JSON.parse(JSON.stringify(alerts))), load: () => [] },
+    setTimer: () => ({ unref() {} }),
+    clearTimer: () => {},
+  });
+  const payload = { remoteJid: "cliente@lid", text: "Ayuda", deliveredSupportJids: [] };
+  await queue.sendOrQueue(payload);
+  assert.deepEqual(payload.deliveredSupportJids, [recipients[0]]);
+  secondAvailable = true;
+  await queue.flush();
+  assert.deepEqual(payload.deliveredSupportJids, recipients);
+  assert.ok(saved.some((alerts) => alerts[0]?.deliveredSupportJids?.length === 1));
+});

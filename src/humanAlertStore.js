@@ -21,6 +21,11 @@ function validateAlert(payload) {
     text: payload.text.slice(0, 1500),
     reason: payload.reason.slice(0, 300),
     createdAt: payload.createdAt,
+    deliveredSupportJids: Array.isArray(payload.deliveredSupportJids)
+      ? [...new Set(payload.deliveredSupportJids.filter((jid) =>
+        typeof jid === "string" && /^\d{8,15}@s\.whatsapp\.net$/.test(jid)
+      ))]
+      : [],
   };
 }
 

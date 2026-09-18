@@ -39,6 +39,7 @@ import { computeReconnectDelay, createMessageSender } from "./reliability.js";
 import { secureDirectoryTree } from "./filesystemSecurity.js";
 import { createContactProcessingQueue } from "./processingQueue.js";
 import { formatContactForLog, logDuration } from "./operationalLog.js";
+import { writeBotStatus } from "./botStatus.js";
 import {
   sanitizeName,
   getConversationPath,
@@ -63,7 +64,7 @@ const {
   responseDelayMs: RESPONSE_DELAY_MS,
   signalStartupValidationMs: SIGNAL_STARTUP_VALIDATION_MS,
   audioForwardMinSeconds: AUDIO_FORWARD_MIN_SECONDS,
-  humanSupportJid: HUMAN_SUPPORT_JID,
+  humanSupportJids: HUMAN_SUPPORT_JIDS,
   humanAlertCooldownMs: HUMAN_ALERT_COOLDOWN_MS,
   humanTakeoverMs: HUMAN_TAKEOVER_MS,
 } = loadRuntimeConfig();
@@ -90,6 +91,8 @@ let reconnectTimer = null;
 let reconnectAttempts = 0;
 let startInProgress = false;
 let releaseProcessLock = null;
+let keepAliveTimer = null;
+let whatsappLoggedOut = false;
 const manualTakeovers = new Set();
 const sessionRepairAttempts = new Map();
 const MAX_SESSION_REPAIR_ATTEMPTS = 2;
@@ -130,9 +133,15 @@ function persistDeliveredHumanAlert({ remoteJid, deliveredAt }) {
 
 const humanAlertRetryQueue = createHumanAlertRetryQueue({
   store: createHumanAlertStore(HUMAN_ALERTS_PATH),
-  deliver: async (payload) => {
+  deliver: async (payload, persistProgress) => {
     const alert = buildHumanAlert(payload);
-    await sendMessageWithRetry(HUMAN_SUPPORT_JID, { text: alert });
+    payload.deliveredSupportJids ||= [];
+    for (const supportJid of HUMAN_SUPPORT_JIDS) {
+      if (payload.deliveredSupportJids.includes(supportJid)) continue;
+      await sendMessageWithRetry(supportJid, { text: alert });
+      payload.deliveredSupportJids.push(supportJid);
+      persistProgress();
+    }
   },
   onDelivered: async (payload) => {
     const deliveredAt = new Date().toISOString();
@@ -178,13 +187,19 @@ function shutdownAfterFatalError(type, error) {
 
 process.on("unhandledRejection", (reason) => shutdownAfterFatalError("unhandledRejection", reason));
 process.on("uncaughtException", (error) => shutdownAfterFatalError("uncaughtException", error));
-process.once("exit", () => releaseProcessLock?.());
+process.once("exit", () => {
+  if (keepAliveTimer) clearInterval(keepAliveTimer);
+  releaseProcessLock?.();
+  writeBotStatus("stopped", { whatsappLoggedOut }, { onlyIfCurrentProcess: true });
+});
 process.once("SIGINT", () => {
   releaseProcessLock?.();
+  writeBotStatus("stopped", {}, { onlyIfCurrentProcess: true });
   process.exit(0);
 });
 process.once("SIGTERM", () => {
   releaseProcessLock?.();
+  writeBotStatus("stopped", {}, { onlyIfCurrentProcess: true });
   process.exit(0);
 });
 process.once("SIGHUP", () => {
@@ -213,6 +228,7 @@ async function notifyHuman({
     text: String(text || "").slice(0, 1500),
     reason: String(reason || "La consulta requiere atención humana.").slice(0, 300),
     createdAt: new Date().toISOString(),
+    deliveredSupportJids: [],
   };
   const alertDelivery = await humanAlertRetryQueue.sendOrQueue(alertPayload);
   alertSent = alertDelivery.sent;
@@ -224,7 +240,9 @@ async function notifyHuman({
         socket: activeSocket,
         logger: whatsappLogger,
       });
-      await sendMessageWithRetry(HUMAN_SUPPORT_JID, audioContent);
+      for (const supportJid of HUMAN_SUPPORT_JIDS) {
+        await sendMessageWithRetry(supportJid, audioContent);
+      }
       forwardedCount += 1;
       console.log(`🎧 Audio de ${formatContactForLog(remoteJid)} reenviado al encargado.`);
     } catch (error) {
@@ -543,6 +561,7 @@ async function startBot() {
       reconnectTimer = null;
     }
     console.log("✅ Asistente de WhatsApp conectado.");
+    writeBotStatus("connected");
     await humanAlertRetryQueue.flush();
 
     for (const event of deferredMessageEvents.splice(0)) {
@@ -573,10 +592,14 @@ async function startBot() {
 
     if (qr) {
       console.log("Escanea este código QR con WhatsApp (Dispositivos vinculados):");
-      qrcode.generate(qr, { small: true });
+      qrcode.generate(qr, { small: true }, (qrDisplay) => {
+        console.log(qrDisplay);
+        writeBotStatus("qr", { qrDisplay });
+      });
     }
 
     if (connection === "close") {
+      writeBotStatus("reconnecting");
       if (startupValidationTimer) {
         clearTimeout(startupValidationTimer);
         startupValidationTimer = null;
@@ -597,9 +620,9 @@ async function startBot() {
 
       const reasonMessages = {
         [DisconnectReason.loggedOut]:
-          "La sesión fue desvinculada desde el celular (WhatsApp > Dispositivos vinculados). Hay que borrar auth_session y volver a escanear el QR.",
+          "La sesión fue desvinculada desde el celular (WhatsApp > Dispositivos vinculados). Usa el panel local para generar un QR nuevo cuando quieras revincular.",
         [DisconnectReason.badSession]:
-          "Sesión corrupta. Puede hacer falta borrar la carpeta auth_session y volver a vincular.",
+          "Sesión corrupta. Usa el panel local para revincular WhatsApp si el problema continúa.",
         [DisconnectReason.connectionClosed]: "La conexión se cerró inesperadamente.",
         [DisconnectReason.connectionLost]:
           "Se perdió la conexión a los servidores de WhatsApp (revisá tu wifi/internet).",
@@ -618,7 +641,9 @@ async function startBot() {
       if (shouldReconnect) {
         scheduleReconnect();
       } else {
-        console.error("❌ Sesión cerrada permanentemente. Corré el bot de nuevo y escaneá el QR.");
+        whatsappLoggedOut = statusCode === DisconnectReason.loggedOut;
+        console.error("❌ Sesión cerrada permanentemente. El bot se detendrá sin borrar auth_session automáticamente.");
+        console.error("Para generar un QR nuevo, abre el panel local y usa la opción de desvinculación manual.");
         shutdownAfterFatalError("WhatsApp loggedOut", lastDisconnect?.error || new Error("Sesión cerrada"));
       }
     } else if (connection === "open") {
@@ -690,7 +715,7 @@ async function startBot() {
 
         // El aviso enviado al número del encargado no representa una toma de
         // control de la conversación de un cliente.
-        if (messageMatchesJid(msg.key, [HUMAN_SUPPORT_JID])) {
+        if (messageMatchesJid(msg.key, HUMAN_SUPPORT_JIDS)) {
           continue;
         }
 
@@ -839,6 +864,10 @@ async function startBot() {
 
 try {
   releaseProcessLock = acquireInstanceLock(INSTANCE_LOCK_PATH);
+  // Baileys puede dejar temporalmente su WebSocket sin handles referenciados.
+  // Este temporizador mantiene vivo el servicio hasta una señal o un error fatal.
+  keepAliveTimer = setInterval(() => {}, 60_000);
+  writeBotStatus("starting");
   const restoredAlerts = humanAlertRetryQueue.restore();
   if (restoredAlerts > 0) {
     console.log(`📬 Se recuperaron ${restoredAlerts} aviso(s) pendiente(s); se enviarán al conectar.`);
