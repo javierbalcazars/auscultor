@@ -1,5 +1,5 @@
 [Unit]
-Description=Asistente de WhatsApp para glamping
+Description=Asistente de WhatsApp para alojamientos y turismo
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=300

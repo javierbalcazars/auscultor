@@ -355,7 +355,7 @@ async function processIncomingMessage({
       }
     } catch (error) {
       contextLoadError = error;
-      console.error("❌ No se pudo cargar la información autorizada del glamping:", error.message);
+      console.error("❌ No se pudo cargar la información autorizada del negocio:", error.message);
     }
 
     let llmResult;
@@ -371,7 +371,7 @@ async function processIncomingMessage({
       llmResult = {
         reply: "",
         needsHuman: true,
-        handoffReason: "No fue posible consultar la información autorizada del glamping.",
+        handoffReason: "No fue posible consultar la información autorizada del negocio.",
       };
     } else {
       const llmStartedAt = Date.now();

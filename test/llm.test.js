@@ -19,6 +19,7 @@ test("envía el contexto completo y limita la salida sin llamadas reales", async
       assert.equal(request.max_completion_tokens, 500);
       assert.match(request.messages[0].content, /Unimarc a 10 minutos/);
       assert.deepEqual(request.messages.slice(1), history);
+      assert.equal(request.response_format.json_schema.name, "hospitality_support_response");
       return mockCompletion({ reply: "Unimarc está a 10 minutos.", needs_human: false, handoff_reason: "" });
     },
   });
@@ -76,8 +77,10 @@ test("solo permite roles user y assistant antes de llamar al modelo", () => {
   );
 });
 
-test("indica interpretar errores ortográficos y preguntas de seguimiento", () => {
-  const prompt = buildSystemPrompt("Información confirmada del glamping");
+test("usa instrucciones genéricas e interpreta errores y preguntas de seguimiento", () => {
+  const prompt = buildSystemPrompt("Información confirmada del negocio");
+  assert.match(prompt, /alojamiento, turismo o atención a visitantes/);
+  assert.doesNotMatch(prompt, /glamping/i);
   assert.match(prompt, /errores ortográficos/);
   assert.match(prompt, /letras omitidas/);
   assert.match(prompt, /historial/);

@@ -7,7 +7,7 @@ import { readAdminConfig, saveAdminConfig, validateAdminConfig } from "../src/ad
 
 function validInput() {
   return {
-    VAULT_PATH: "./Vault", BUSINESS_NAME: "Glamping de prueba",
+    VAULT_PATH: "./Vault", BUSINESS_NAME: "Alojamiento de prueba",
     OPENAI_API_KEY: "sk-prueba-segura", OPENAI_MODEL: "gpt-4o-mini",
     CONVERSATIONS_FOLDER: "Chats", CONVERSATION_EXPIRY_HOURS: "24",
     CONVERSATION_RETENTION_DAYS: "180", MAX_HISTORY_MESSAGES: "10",
@@ -43,6 +43,8 @@ test("guarda con permisos privados y nunca devuelve la API key", (t) => {
   const visible = readAdminConfig(envPath);
   assert.equal(visible.OPENAI_API_KEY, "");
   assert.equal(visible.hasOpenAiApiKey, true);
+  assert.deepEqual(visible.HUMAN_SUPPORT_NUMBERS, ["+56912345678", "+56987654321"]);
+  assert.deepEqual(visible.IGNORE_NUMBERS, ["+56911112222"]);
 });
 
 test("rechaza límites inconsistentes y entradas con saltos de línea", () => {
@@ -60,7 +62,7 @@ test("conserva solamente los diez respaldos más recientes", (t) => {
   for (let index = 0; index < 12; index += 1) {
     const stamp = new Date(Date.now() + index).toISOString().replace(/[:.]/g, "-");
     fs.writeFileSync(path.join(backupDirectory, `${stamp}-${index}.env`), "respaldo", { mode: 0o600 });
-    saveAdminConfig({ ...validInput(), BUSINESS_NAME: `Glamping ${index}` }, envPath, { backupRoot: directory });
+    saveAdminConfig({ ...validInput(), BUSINESS_NAME: `Negocio ${index}` }, envPath, { backupRoot: directory });
   }
   const backups = fs.readdirSync(backupDirectory);
   assert.equal(backups.length, 10);

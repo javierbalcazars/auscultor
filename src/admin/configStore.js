@@ -5,7 +5,7 @@ import { ENV_PATH, PROJECT_ROOT } from "../config.js";
 
 export const CONFIG_FIELDS = {
   VAULT_PATH: "./Vault",
-  BUSINESS_NAME: "Mi Glamping",
+  BUSINESS_NAME: "Mi Negocio",
   OPENAI_MODEL: "gpt-4o-mini",
   CONVERSATIONS_FOLDER: "Chats",
   CONVERSATION_EXPIRY_HOURS: "24",
@@ -54,6 +54,14 @@ function phoneList(value, required = false) {
   return cleaned;
 }
 
+function phoneListForDisplay(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => item.replace(/\D/g, ""))
+    .filter(Boolean)
+    .map((digits) => `+${digits}`);
+}
+
 function safeText(value, name, max = 200) {
   const text = String(value ?? "").trim();
   if (!text || text.length > max || /[\r\n\0]/.test(text)) throw new Error(`${name} no es válido`);
@@ -68,8 +76,8 @@ export function readAdminConfig(envPath = ENV_PATH) {
     ...Object.fromEntries(Object.keys(CONFIG_FIELDS).map((key) => [key, current[key] ?? CONFIG_FIELDS[key]])),
     OPENAI_API_KEY: "",
     hasOpenAiApiKey: Boolean(current.OPENAI_API_KEY && current.OPENAI_API_KEY !== "sk-xxxxxxxx"),
-    HUMAN_SUPPORT_NUMBERS: support ? support.split(",").map((item) => item.trim()).filter(Boolean) : [],
-    IGNORE_NUMBERS: current.IGNORE_NUMBERS ? current.IGNORE_NUMBERS.split(",").map((item) => item.trim()).filter(Boolean) : [],
+    HUMAN_SUPPORT_NUMBERS: phoneListForDisplay(support),
+    IGNORE_NUMBERS: phoneListForDisplay(current.IGNORE_NUMBERS),
   };
 }
 

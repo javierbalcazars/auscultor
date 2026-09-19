@@ -35,7 +35,7 @@ async function runBot(t, directory, overrides = {}) {
     stdio: ["ignore", "pipe", "pipe", "ipc"],
     env: {
       PATH: process.env.PATH, TZ: "America/Santiago",
-      BUSINESS_NAME: "Glamping de Prueba",
+      BUSINESS_NAME: "Alojamiento de Prueba",
       OPENAI_API_KEY: "sk-simulacion", HUMAN_SUPPORT_NUMBER: "56912345678",
       IGNORE_NUMBERS: "56912345678", RESPONSE_DELAY_MS: "30",
       SIGNAL_STARTUP_VALIDATION_MS: "500", OPENAI_TIMEOUT_MS: "3000",

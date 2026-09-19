@@ -1,10 +1,12 @@
-# Asistente de WhatsApp para glampings
+# Asistente de WhatsApp para alojamientos y turismo
 
 Versión actual: **1.5.2**.
 
-Atiende consultas simples del público por WhatsApp usando las notas Markdown de
-`Vault/FAQs` como fuente de información. Cuando no existe una respuesta confirmada
-o se requiere una acción manual, deriva la conversación a un encargado.
+Atiende consultas simples por WhatsApp para alojamientos, campings, hostales,
+cabañas, arriendos turísticos, parques y otros negocios de turismo o atención a
+visitantes. Usa las notas Markdown de `Vault/FAQs` como fuente de información y,
+cuando no existe una respuesta confirmada o se requiere una acción manual, deriva
+la conversación a un encargado.
 
 El programa está pensado principalmente para instalarse en un PC dedicado que
 funcione como bot de atención de WhatsApp las 24 horas, todos los días. También
@@ -114,8 +116,8 @@ con doble clic para configurar el bot. No necesitas crear ni editar `.env`
 manualmente: el panel lo genera al guardar por primera vez.
 
 El repositorio incluye `.env.example` como referencia técnica y una FAQ genérica
-en `Vault/FAQs/Información del Glamping.md`. Conserva siempre tu `.env`, Vault y
-sesión de WhatsApp cuando actualices una instalación existente.
+dentro de `Vault/FAQs`. Conserva siempre tu `.env`, Vault y sesión de WhatsApp
+cuando actualices una instalación existente.
 
 ## Panel de control local
 
@@ -190,8 +192,8 @@ del panel también se guardan dentro de `.local`, que queda fuera de Git.
 1. Abre `Abrir panel.desktop`.
 2. Completa las pestañas **General**, **Personas**, **Tiempos y límites** y
    **Avanzado**, y guarda la configuración.
-3. Edita `Vault/FAQs/Información del Glamping.md` con información confirmada de
-   tu negocio. Puedes agregar otros documentos `.md` dentro de `Vault/FAQs`.
+3. Edita los documentos de `Vault/FAQs` con información confirmada de tu negocio.
+   Puedes agregar, cambiar o quitar archivos `.md` dentro de esa carpeta.
 4. Presiona **Iniciar bot** en la parte superior del panel.
 5. Si aparece un QR, escanéalo desde WhatsApp en **Dispositivos vinculados**.
 

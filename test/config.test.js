@@ -45,7 +45,7 @@ test("acepta una configuración segura y aplica valores predeterminados", (t) =>
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
   addValidFaq(vault);
   const config = loadRuntimeConfig(validEnvironment(), vault);
-  assert.equal(config.businessName, "Mi Glamping");
+  assert.equal(config.businessName, "Mi Negocio");
   assert.equal(config.responseDelayMs, 4000);
   assert.equal(config.signalStartupValidationMs, 3000);
   assert.equal(config.audioForwardMinSeconds, 10);

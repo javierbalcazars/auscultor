@@ -35,9 +35,9 @@
         </label>
         <input name="CONVERSATIONS_FOLDER" type="hidden" value="Chats">
       </div></section>
-      <section id="personas" class="panel"><div class="section-title"><h2>Personas y números</h2><p>Un número por línea, incluyendo el código del país.</p></div><div class="grid">
-        <label><span>Asistentes humanos</span><textarea name="HUMAN_SUPPORT_NUMBERS" rows="8" required></textarea><small>Las alertas y audios se enviarán a estos números.</small></label>
-        <label><span>Números ignorados o bloqueados</span><textarea name="IGNORE_NUMBERS" rows="8"></textarea><small>El bot no responderá mensajes de estos números.</small></label>
+      <section id="personas" class="panel"><div class="section-title"><h2>Personas y números</h2><p>Un número por línea, con signo + y código del país.</p></div><div class="grid">
+        <label><span>Asistentes humanos</span><textarea name="HUMAN_SUPPORT_NUMBERS" rows="8" required placeholder="+56 9 1234 5678"></textarea><small>Las alertas y audios se enviarán a estos números. Se guardan internamente solo con dígitos para WhatsApp.</small></label>
+        <label><span>Números ignorados o bloqueados</span><textarea name="IGNORE_NUMBERS" rows="8" placeholder="+56 9 1234 5678"></textarea><small>El bot no responderá mensajes de estos números.</small></label>
       </div></section>
       <section id="tiempos" class="panel"><div class="section-title"><h2>Tiempos y límites</h2><p>Ajusta el ritmo de respuesta y la intervención humana.</p></div><div class="grid numeric">
         <label><span>Espera antes de responder (milisegundos)</span><div class="unit"><input name="RESPONSE_DELAY_MS" type="number" min="0" step="1" required><em>ms</em></div><small>1000 ms equivalen a 1 segundo.</small></label>

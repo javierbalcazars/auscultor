@@ -72,7 +72,7 @@ export function loadOpenAIConfig(environment = process.env) {
 export function loadRuntimeConfig(environment = process.env, vaultPath = VAULT_PATH) {
   loadOpenAIConfig(environment);
 
-  const businessName = (environment.BUSINESS_NAME || "Mi Glamping").trim();
+  const businessName = (environment.BUSINESS_NAME || "Mi Negocio").trim();
   if (!businessName || businessName.length > 100 || /[\r\n]/.test(businessName)) {
     throw new Error("BUSINESS_NAME debe contener un nombre de entre 1 y 100 caracteres, en una sola línea");
   }
