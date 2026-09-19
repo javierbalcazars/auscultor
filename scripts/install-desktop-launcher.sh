@@ -7,7 +7,7 @@ LAUNCHER="$PROJECT_DIR/Abrir panel.desktop"
 cat >"$LAUNCHER" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Abrir panel de WhatsApp Bot
+Name=Abrir panel de Auscultor
 Comment=Inicia y abre la configuración local del bot
 Exec=$PROJECT_DIR/scripts/open-admin-panel.sh
 Icon=preferences-system

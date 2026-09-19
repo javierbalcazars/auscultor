@@ -107,7 +107,7 @@ export function startBotProcess() {
   fs.chmodSync(logPath, 0o600);
 
   const result = spawnSync("systemd-run", [
-    "--user", "--collect", `--unit=whatsapp-bot-${Date.now()}`,
+    "--user", "--collect", `--unit=auscultor-${Date.now()}`,
     `--property=WorkingDirectory=${PROJECT_ROOT}`,
     `--property=StandardOutput=append:${logPath}`,
     `--property=StandardError=append:${logPath}`,

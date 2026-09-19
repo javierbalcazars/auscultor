@@ -6,7 +6,7 @@ import path from "path";
 import { acquireInstanceLock } from "../src/instanceLock.js";
 
 function temporaryLock(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-lock-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-lock-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   return path.join(dir, ".bot-instance.lock");
 }

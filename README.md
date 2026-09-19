@@ -1,6 +1,8 @@
-# Asistente de WhatsApp para alojamientos y turismo
+# Auscultor
 
-Versión actual: **1.5.3**.
+Asistente inteligente para alojamientos y turismo.
+
+Versión actual: **1.6.0**.
 
 Atiende consultas simples por WhatsApp para alojamientos, campings, hostales,
 cabañas, arriendos turísticos, parques y otros negocios de turismo o atención a
@@ -15,7 +17,7 @@ encendido, conectado a Internet y sin suspender ni cerrar el proceso durante el
 horario en que se espera atención automática. Para una operación continua se
 recomienda un equipo exclusivo y ejecutar el programa como servicio de `systemd`.
 
-La versión 1.5.3 incluye un panel local pensado para usar el bot como una
+La versión 1.6.0 incluye un panel local pensado para usar el bot como una
 aplicación de escritorio. Desde una sola pantalla se configura el negocio, se
 inicia o detiene el bot, se escanea el QR y se comprueba WhatsApp y OpenAI.
 
@@ -105,8 +107,8 @@ recomienda `v24`; el archivo `.nvmrc` selecciona esa versión al ejecutar
 Clona el repositorio e instala las dependencias:
 
 ```bash
-git clone https://github.com/javierbalcazars/whatsapp-bot-git.git whatsapp-bot
-cd whatsapp-bot
+git clone https://github.com/javierbalcazars/auscultor.git auscultor
+cd auscultor
 npm ci
 ./scripts/install-desktop-launcher.sh
 ```
@@ -334,7 +336,7 @@ contraseña no es posible recuperar el contenido.
 
 El uso normal de escritorio se controla desde el panel. Para un PC dedicado que
 deba iniciar el bot automáticamente al encenderse, el repositorio incluye
-`deploy/whatsapp-bot.service`.
+`deploy/auscultor.service`.
 
 <details>
 <summary>Instalación opcional del servicio permanente</summary>
@@ -343,16 +345,16 @@ Reemplaza `[USER]` en el archivo por el usuario Linux que ejecutará el bot y
 confirma la ruta mostrada por `command -v node`. Después instala el servicio:
 
 ```bash
-sudo install -m 644 deploy/whatsapp-bot.service /etc/systemd/system/whatsapp-bot.service
+sudo install -m 644 deploy/auscultor.service /etc/systemd/system/auscultor.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now whatsapp-bot.service
-sudo systemctl status whatsapp-bot.service
+sudo systemctl enable --now auscultor.service
+sudo systemctl status auscultor.service
 ```
 
 Para consultar los logs:
 
 ```bash
-sudo journalctl -u whatsapp-bot.service -f
+sudo journalctl -u auscultor.service -f
 ```
 
 No inicies el bot desde el panel mientras el servicio esté activo. El archivo se

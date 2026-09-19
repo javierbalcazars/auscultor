@@ -10,7 +10,7 @@ import {
 } from "../src/conversationRetention.js";
 
 function temporaryDirectory(t) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-retention-"));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-retention-"));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
   return directory;
 }

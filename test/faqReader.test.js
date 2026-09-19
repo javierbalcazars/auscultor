@@ -6,7 +6,7 @@ import path from "path";
 import { buildFaqContext, loadFaqDocuments } from "../src/faqReader.js";
 
 test("carga todas las FAQs y excluye los chats privados", (t) => {
-  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-vault-"));
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-vault-"));
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
   fs.mkdirSync(path.join(vault, "FAQs"));
   fs.mkdirSync(path.join(vault, "Chats"));

@@ -1,8 +1,8 @@
 {
-  "name": "whatsapp-bot",
-  "version": "1.5.3",
+  "name": "auscultor",
+  "version": "1.6.0",
   "type": "module",
-  "description": "Bot de WhatsApp que responde preguntas de clientes usando archivos Markdown y un LLM",
+  "description": "Asistente local de atención para alojamientos y turismo mediante WhatsApp e inteligencia artificial",
   "license": "AGPL-3.0-or-later",
   "main": "src/index.js",
   "engines": {

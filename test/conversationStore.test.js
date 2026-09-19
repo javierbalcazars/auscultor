@@ -11,7 +11,7 @@ import {
 } from "../src/conversationStore.js";
 
 function temporaryVault(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-store-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-store-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   return dir;
 }

@@ -14,7 +14,7 @@ chmod 600 "$LOG_FILE"
 if ! curl --fail --silent --output /dev/null "$PANEL_URL/api/config"; then
   cd "$PROJECT_DIR"
   if command -v systemd-run >/dev/null && systemd-run --user --collect \
-      --unit=whatsapp-bot-admin \
+      --unit=auscultor-admin \
       --property="WorkingDirectory=$PROJECT_DIR" \
       --property="StandardOutput=append:$LOG_FILE" \
       --property="StandardError=append:$LOG_FILE" \

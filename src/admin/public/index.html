@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Configuración · WhatsApp Bot</title>
+  <title>Configuración · Auscultor</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar"><div class="brand"><span class="logo">W</span><div><strong>WhatsApp Bot</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">Iniciar bot</button></div></header>
+  <header class="topbar"><div class="brand"><span class="logo">A</span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">Iniciar bot</button></div></header>
   <main>
     <section class="hero"><div><p class="eyebrow">CONFIGURACIÓN DEL ASISTENTE</p><h1>Panel de Control</h1><p>Los cambios se guardan en <code>.env</code>. Reinicia el bot después de guardar para aplicarlos.</p></div><div class="control-stack"><div id="health-panel" class="health-panel" aria-live="polite"><div><span id="bot-process-led" class="health-led checking"></span><p><b>Bot</b><small>Comprobando proceso…</small></p></div><div><span id="whatsapp-led" class="health-led checking"></span><p><b>WhatsApp</b><small>Comprobando sesión…</small></p></div><div><span id="openai-led" class="health-led checking"></span><p><b>OpenAI API</b><small>Comprobando clave…</small></p></div></div></div></section>
     <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre></div></section>

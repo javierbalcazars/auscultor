@@ -41,7 +41,7 @@ test("expone la misma versión configurada en package.json", () => {
 });
 
 test("acepta una configuración segura y aplica valores predeterminados", (t) => {
-  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-config-"));
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-"));
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
   addValidFaq(vault);
   const config = loadRuntimeConfig(validEnvironment(), vault);
@@ -58,7 +58,7 @@ test("acepta una configuración segura y aplica valores predeterminados", (t) =>
 });
 
 test("acepta varios asistentes humanos y elimina duplicados", (t) => {
-  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-config-"));
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-"));
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
   addValidFaq(vault);
   const config = loadRuntimeConfig({
@@ -73,7 +73,7 @@ test("acepta varios asistentes humanos y elimina duplicados", (t) => {
 });
 
 test("rechaza secretos ausentes, números inválidos y rutas inseguras", (t) => {
-  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-config-"));
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-"));
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
   addValidFaq(vault);
   assert.throws(() => loadRuntimeConfig({ ...validEnvironment(), OPENAI_API_KEY: "" }, vault));
@@ -87,7 +87,7 @@ test("rechaza secretos ausentes, números inválidos y rutas inseguras", (t) => 
 });
 
 test("rechaza un Vault sin documentos de preguntas frecuentes", (t) => {
-  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "whatsapp-bot-config-"));
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-"));
   t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
 
   assert.throws(

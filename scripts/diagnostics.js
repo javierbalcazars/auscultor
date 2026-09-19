@@ -45,7 +45,7 @@ addCheck(
   fs.existsSync(AUTH_SESSION_PATH) ? `permisos=${modeOf(AUTH_SESSION_PATH)}` : "ausente"
 );
 
-console.log(`Diagnóstico local de whatsapp-bot ${APP_VERSION}`);
+console.log(`Diagnóstico local de Auscultor ${APP_VERSION}`);
 console.log(`Proyecto: ${PROJECT_ROOT}`);
 for (const check of checks) {
   console.log(`${check.ok ? "OK" : "ERROR"}  ${check.name}: ${check.detail}`);
