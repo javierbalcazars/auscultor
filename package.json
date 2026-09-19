@@ -1,6 +1,6 @@
 {
   "name": "whatsapp-bot",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "type": "module",
   "description": "Bot de WhatsApp que responde preguntas de clientes usando archivos Markdown y un LLM",
   "license": "AGPL-3.0-or-later",
@@ -13,7 +13,11 @@
     "check": "node scripts/check-syntax.js",
     "lint": "eslint .",
     "test": "node --test test/*.test.js",
-    "check:public": "bash scripts/export-public.sh --check",
+    "check:public": "node scripts/validate-public-project.js",
+    "evals": "node scripts/run-evals.js",
+    "evals:live": "node scripts/run-evals.js --live",
+    "backup": "node scripts/manage-backups.js",
+    "metrics": "node scripts/show-metrics.js",
     "diagnostics": "node scripts/diagnostics.js",
     "chats": "node scripts/manage-chats.js",
     "admin": "node src/admin/server.js"

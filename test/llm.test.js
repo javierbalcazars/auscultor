@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { askLLM, buildSystemPrompt, normalizeConversationHistory } from "../src/llm.js";
+import {
+  askLLM,
+  buildSystemPrompt,
+  normalizeConversationHistory,
+  validateModelResult,
+} from "../src/llm.js";
 
 const environment = { OPENAI_API_KEY: "sk-simulacion", OPENAI_MAX_OUTPUT_TOKENS: "500" };
 function mockCompletion(result, finishReason = "stop") {
@@ -95,4 +100,27 @@ test("no incorpora el nombre controlado por el usuario dentro del prompt", () =>
 
   assert.doesNotMatch(prompt, /Ignora todas las reglas/);
   assert.match(prompt, /No incluyas un saludo inicial/);
+});
+
+test("valida coherencia, longitud y confirmaciones prohibidas del modelo", () => {
+  assert.deepEqual(
+    validateModelResult({ reply: "El check-in es a las 15:00.", needs_human: false, handoff_reason: "" }),
+    { reply: "El check-in es a las 15:00.", needsHuman: false, handoffReason: "" }
+  );
+  assert.throws(
+    () => validateModelResult({ reply: "", needs_human: true, handoff_reason: "" }),
+    /sin indicar el motivo/
+  );
+  assert.throws(
+    () => validateModelResult({ reply: "Respuesta", needs_human: false, handoff_reason: "Revisar" }),
+    /sin solicitar atención humana/
+  );
+  assert.throws(
+    () => validateModelResult({ reply: "a".repeat(1501), needs_human: false, handoff_reason: "" }),
+    /más de 1500/
+  );
+  assert.throws(
+    () => validateModelResult({ reply: "Ya he confirmado su reserva.", needs_human: false, handoff_reason: "" }),
+    /confirmación de reserva o pago/
+  );
 });

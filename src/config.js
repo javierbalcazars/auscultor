@@ -24,6 +24,7 @@ export function resolveProjectPath(targetPath) {
 export const AUTH_SESSION_PATH = resolveProjectPath("auth_session");
 export const INSTANCE_LOCK_PATH = resolveProjectPath(".bot-instance.lock");
 export const HUMAN_ALERTS_PATH = resolveProjectPath("data/pending-human-alerts.json");
+export const METRICS_PATH = resolveProjectPath("data/metrics.json");
 export const VAULT_PATH = resolveProjectPath(
   process.env.VAULT_PATH || "Vault"
 );

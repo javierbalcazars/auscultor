@@ -4,6 +4,7 @@ import {
   FAQS_PATH,
   HUMAN_ALERTS_PATH,
   INSTANCE_LOCK_PATH,
+  METRICS_PATH,
   VAULT_PATH,
   loadRuntimeConfig,
 } from "./config.js";
@@ -13,7 +14,6 @@ import pino from "pino";
 import { loadFaqDocuments, buildFaqContext } from "./faqReader.js";
 import {
   buildCustomerGreeting,
-  buildAudioBatchDecision,
   createOutgoingMessageTracker,
   createRateLimiter,
   createMessageDeduplicator,
@@ -22,7 +22,6 @@ import {
   getMessageTimestampMs,
   isMessageFromCurrentStartup,
   messageMatchesJid,
-  shouldForwardAudio,
   shouldRecordManualMessage,
   shouldIgnoreRemoteJid,
 } from "./messageUtils.js";
@@ -35,11 +34,14 @@ import { isHumanTakeoverActive } from "./handoff.js";
 import { buildHumanAlert } from "./humanAlert.js";
 import { createHumanAlertRetryQueue } from "./humanAlertRetry.js";
 import { createHumanAlertStore } from "./humanAlertStore.js";
-import { computeReconnectDelay, createMessageSender } from "./reliability.js";
+import { createMessageSender } from "./reliability.js";
 import { secureDirectoryTree } from "./filesystemSecurity.js";
 import { createContactProcessingQueue } from "./processingQueue.js";
 import { formatContactForLog, logDuration } from "./operationalLog.js";
 import { writeBotStatus } from "./botStatus.js";
+import { createMetricsStore } from "./metricsStore.js";
+import { createRuntimeController } from "./runtimeController.js";
+import { createMessageBatcher } from "./messageBatcher.js";
 import {
   sanitizeName,
   getConversationPath,
@@ -78,29 +80,68 @@ const LONG_AUDIO_HANDOFF_MESSAGE =
 const AUDIO_FORWARD_FAILURE_MESSAGE =
   "Por el momento no pudimos reenviar tu mensaje de audio. Por favor, escríbenos tu consulta para que podamos ayudarte.";
 
-const pendingMessages = new Map();
 const isDuplicateMessage = createMessageDeduplicator();
 const outgoingMessageTracker = createOutgoingMessageTracker();
 const allowContactRequest = createRateLimiter({
   limit: MAX_REQUESTS_PER_HOUR,
   windowMs: 60 * 60 * 1000,
 });
-let fatalShutdownStarted = false;
 let activeSocket = null;
-let reconnectTimer = null;
-let reconnectAttempts = 0;
 let startInProgress = false;
-let releaseProcessLock = null;
-let keepAliveTimer = null;
 let whatsappLoggedOut = false;
 const manualTakeovers = new Set();
 const sessionRepairAttempts = new Map();
 const MAX_SESSION_REPAIR_ATTEMPTS = 2;
+const metrics = createMetricsStore(METRICS_PATH);
+
+function recordMetric(name, amount = 1) {
+  try {
+    metrics.increment(name, amount);
+  } catch (error) {
+    console.error("⚠️ No se pudo actualizar una métrica local:", error.message);
+  }
+}
+
+function recordDuration(name, durationMs) {
+  try {
+    metrics.duration(name, durationMs);
+  } catch (error) {
+    console.error("⚠️ No se pudo actualizar una duración local:", error.message);
+  }
+}
+
+const runtime = createRuntimeController({
+  connect: () => startBot(),
+  getLoggedOut: () => whatsappLoggedOut,
+  writeStatus: writeBotStatus,
+  onReconnectScheduled: (delayMs) => {
+    recordMetric("whatsapp_reconnections");
+    console.log(`🔄 Nuevo intento de conexión en ${delayMs / 1000} segundo(s)...`);
+  },
+  onReconnectFailure: (error) => {
+    console.error("❌ No se pudo reiniciar la conexión con WhatsApp:", error.message);
+  },
+});
+runtime.installProcessHandlers();
 
 const enqueueContactProcessing = createContactProcessingQueue({
   onError: (remoteJid, error, phase) => {
     const label = phase === "previous" ? "anterior" : "inesperado";
     console.error(`❌ Error ${label} en la cola de ${formatContactForLog(remoteJid)}:`, error);
+  },
+});
+
+const messageBatcher = createMessageBatcher({
+  maxBatchMessages: MAX_BATCH_MESSAGES,
+  maxInputChars: MAX_INPUT_CHARS,
+  responseDelayMs: RESPONSE_DELAY_MS,
+  audioForwardMinSeconds: AUDIO_FORWARD_MIN_SECONDS,
+  allowRequest: allowContactRequest,
+  onRateLimited: () => recordMetric("rate_limits_triggered"),
+  shortAudioReply: SHORT_AUDIO_MESSAGE,
+  longAudioReply: LONG_AUDIO_HANDOFF_MESSAGE,
+  onFlush: (payload) => {
+    enqueueContactProcessing(payload.remoteJid, () => processIncomingMessage(payload));
   },
 });
 
@@ -160,53 +201,6 @@ const humanAlertRetryQueue = createHumanAlertRetryQueue({
   },
 });
 
-function scheduleReconnect() {
-  if (reconnectTimer || fatalShutdownStarted) return;
-
-  const delayMs = computeReconnectDelay(reconnectAttempts);
-  reconnectAttempts += 1;
-  console.log(`🔄 Nuevo intento de conexión en ${delayMs / 1000} segundo(s)...`);
-
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = null;
-    startBot().catch((error) => {
-      console.error("❌ No se pudo reiniciar la conexión con WhatsApp:", error.message);
-      scheduleReconnect();
-    });
-  }, delayMs);
-}
-
-function shutdownAfterFatalError(type, error) {
-  if (fatalShutdownStarted) return;
-  fatalShutdownStarted = true;
-  console.error(`❌ Error fatal no controlado (${type}):`, error);
-  console.error("El bot se cerrará para evitar continuar en un estado inconsistente.");
-  process.exitCode = 1;
-  setTimeout(() => process.exit(1), 100).unref();
-}
-
-process.on("unhandledRejection", (reason) => shutdownAfterFatalError("unhandledRejection", reason));
-process.on("uncaughtException", (error) => shutdownAfterFatalError("uncaughtException", error));
-process.once("exit", () => {
-  if (keepAliveTimer) clearInterval(keepAliveTimer);
-  releaseProcessLock?.();
-  writeBotStatus("stopped", { whatsappLoggedOut }, { onlyIfCurrentProcess: true });
-});
-process.once("SIGINT", () => {
-  releaseProcessLock?.();
-  writeBotStatus("stopped", {}, { onlyIfCurrentProcess: true });
-  process.exit(0);
-});
-process.once("SIGTERM", () => {
-  releaseProcessLock?.();
-  writeBotStatus("stopped", {}, { onlyIfCurrentProcess: true });
-  process.exit(0);
-});
-process.once("SIGHUP", () => {
-  releaseProcessLock?.();
-  process.exit(0);
-});
-
 function humanAlertIsOnCooldown(lastNotification) {
   if (!lastNotification) return false;
   const elapsed = Date.now() - new Date(lastNotification).getTime();
@@ -244,6 +238,7 @@ async function notifyHuman({
         await sendMessageWithRetry(supportJid, audioContent);
       }
       forwardedCount += 1;
+      recordMetric("audios_forwarded");
       console.log(`🎧 Audio de ${formatContactForLog(remoteJid)} reenviado al encargado.`);
     } catch (error) {
       console.error("❌ No se pudo reenviar el audio al encargado:", error.message);
@@ -378,7 +373,9 @@ async function processIncomingMessage({
       try {
         const modelTurn = { ...userTurn, content: modelText };
         llmResult = await askLLM([...recentHistory, modelTurn].slice(-MAX_HISTORY_MESSAGES), context);
+        recordMetric("llm_requests_succeeded");
       } catch (error) {
+        recordMetric("llm_requests_failed");
         console.error("❌ No se pudo obtener una respuesta de OpenAI:", error.message);
         llmResult = {
           reply: "",
@@ -386,7 +383,8 @@ async function processIncomingMessage({
           handoffReason: "El asistente no pudo generar una respuesta por un problema técnico.",
         };
       } finally {
-        logDuration("openai_request", llmStartedAt, `contact=${formatContactForLog(remoteJid)}`);
+        const durationMs = logDuration("openai_request", llmStartedAt, `contact=${formatContactForLog(remoteJid)}`);
+        recordDuration("llm_request", durationMs);
       }
     }
 
@@ -398,6 +396,7 @@ async function processIncomingMessage({
       .filter((part) => part?.trim())
       .join("\n\n");
     const awaitingHuman = llmResult.needsHuman;
+    if (awaitingHuman) recordMetric("human_handoffs");
     const humanHandoffAt = awaitingHuman ? new Date().toISOString() : null;
 
     const cancelAutomaticReplyIfManual = () => {
@@ -461,6 +460,7 @@ async function processIncomingMessage({
     });
 
     await sendMessageWithRetry(remoteJid, { text: reply });
+    recordMetric("replies_sent");
 
     history.push({
       role: "assistant",
@@ -516,7 +516,7 @@ async function recordHumanOutgoingMessage({ remoteJid, text, pendingText = "" })
 }
 
 async function startBot() {
-  if (startInProgress || fatalShutdownStarted) return;
+  if (startInProgress || runtime.isStopping()) return;
   startInProgress = true;
 
   let sock;
@@ -555,11 +555,8 @@ async function startBot() {
     signalDiagnostics.markConnected();
     activeSocket = sock;
     socketReady = true;
-    reconnectAttempts = 0;
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
+    runtime.markConnected();
+    recordMetric("whatsapp_connections");
     console.log("✅ Asistente de WhatsApp conectado.");
     writeBotStatus("connected");
     await humanAlertRetryQueue.flush();
@@ -582,7 +579,7 @@ async function startBot() {
     setTimeout(() => {
       startBot().catch((error) => {
         console.error("❌ No se pudo reiniciar después de reparar la sesión:", error.message);
-        scheduleReconnect();
+        runtime.scheduleReconnect();
       });
     }, 250);
   }
@@ -639,12 +636,12 @@ async function startBot() {
       );
 
       if (shouldReconnect) {
-        scheduleReconnect();
+        runtime.scheduleReconnect();
       } else {
         whatsappLoggedOut = statusCode === DisconnectReason.loggedOut;
         console.error("❌ Sesión cerrada permanentemente. El bot se detendrá sin borrar auth_session automáticamente.");
         console.error("Para generar un QR nuevo, abre el panel local y usa la opción de desvinculación manual.");
-        shutdownAfterFatalError("WhatsApp loggedOut", lastDisconnect?.error || new Error("Sesión cerrada"));
+        runtime.fatal("WhatsApp loggedOut", lastDisconnect?.error || new Error("Sesión cerrada"));
       }
     } else if (connection === "open") {
       if (startupValidationStarted) return;
@@ -686,10 +683,19 @@ async function startBot() {
   });
 
   handleMessagesUpsert = async ({ messages, type }) => {
-    if (type !== "notify") return;
+    recordMetric("message_upsert_events");
+    recordMetric("messages_seen_by_baileys", messages.length);
+    if (type !== "notify") {
+      recordMetric("messages_ignored_non_notify", messages.length);
+      return;
+    }
+    recordMetric("messages_notify", messages.length);
 
     for (const msg of messages) {
-      if (shouldIgnoreRemoteJid(msg.key.remoteJid)) continue;
+      if (shouldIgnoreRemoteJid(msg.key.remoteJid)) {
+        recordMetric("messages_ignored_system_chat");
+        continue;
+      }
 
       const audioInfo = getAudioMessageInfo(msg.message);
       const text = audioInfo
@@ -698,11 +704,15 @@ async function startBot() {
           : `[El cliente envió un mensaje de audio de ${audioInfo.durationSeconds} segundos.]`
         : extractMessageText(msg.message);
 
-      if (!text) continue;
+      if (!text) {
+        recordMetric("messages_ignored_without_content");
+        continue;
+      }
 
       const remoteJid = msg.key.remoteJid;
 
       if (msg.key.fromMe) {
+        recordMetric("messages_from_business_account");
         if (
           outgoingMessageTracker.consumeIfAutomated({
             remoteJid,
@@ -719,12 +729,12 @@ async function startBot() {
           continue;
         }
 
-        const pending = pendingMessages.get(remoteJid);
+        const hasPendingMessages = messageBatcher.has(remoteJid);
         const convPath = getConversationPath(VAULT_PATH, CONVERSATIONS_FOLDER, remoteJid);
         const existing = loadConversation(convPath, CONVERSATION_EXPIRY_HOURS);
         if (
           !shouldRecordManualMessage({
-            hasPendingMessages: Boolean(pending),
+            hasPendingMessages,
             hasActiveProcessing: enqueueContactProcessing.has(remoteJid),
             conversation: existing,
             messageTimestampMs: getMessageTimestampMs(msg),
@@ -735,112 +745,32 @@ async function startBot() {
         }
 
         manualTakeovers.add(remoteJid);
-        if (pending?.timer) clearTimeout(pending.timer);
-        pendingMessages.delete(remoteJid);
-        const pendingText = pending?.texts?.join("\n").slice(0, MAX_INPUT_CHARS) || "";
+        const pendingText = messageBatcher.cancel(remoteJid);
         enqueueContactProcessing(remoteJid, () =>
           recordHumanOutgoingMessage({ remoteJid, text, pendingText })
         );
         continue;
       }
 
-      if (messageMatchesJid(msg.key, IGNORE_NUMBERS)) continue;
-      if (isDuplicateMessage(msg.key.id)) continue;
-
-      console.log(`📩 Mensaje recibido de ${formatContactForLog(remoteJid)}.`);
-
-      const pending = pendingMessages.get(remoteJid);
-      if (pending) clearTimeout(pending.timer);
-
-      const batch = pending || {
-        texts: [],
-        modelTexts: [],
-        shortAudioCount: 0,
-        longAudioMessages: [],
-        totalChars: 0,
-        pushName: msg.pushName,
-        timer: null,
-      };
-      batch.texts.push(text);
-      if (audioInfo) {
-        if (shouldForwardAudio(audioInfo, AUDIO_FORWARD_MIN_SECONDS)) {
-          batch.longAudioMessages.push(msg);
-        } else {
-          batch.shortAudioCount += 1;
-        }
-      } else {
-        batch.modelTexts.push(text);
+      if (messageMatchesJid(msg.key, IGNORE_NUMBERS)) {
+        recordMetric("messages_ignored_configured_number");
+        continue;
       }
-      batch.totalChars += text.length + (batch.texts.length > 1 ? 1 : 0);
-      if (!batch.pushName && msg.pushName) batch.pushName = msg.pushName;
-
-      const flushBatch = () => {
-        if (pendingMessages.get(remoteJid) !== batch) return;
-        pendingMessages.delete(remoteJid);
-        const exceededInputLimit = batch.totalChars > MAX_INPUT_CHARS;
-        const combinedText = batch.texts.join("\n").slice(0, MAX_INPUT_CHARS);
-        const combinedModelText = batch.modelTexts.join("\n").slice(0, MAX_INPUT_CHARS);
-        const allowedByRateLimit = allowContactRequest(remoteJid);
-        const forcedHandoffReason = exceededInputLimit
-          ? "La consulta superó el tamaño máximo permitido y requiere revisión humana."
-          : !allowedByRateLimit
-            ? "El contacto superó el límite de consultas automáticas por hora."
-            : null;
-        const audioDecision = buildAudioBatchDecision({
-          longAudioMessages: batch.longAudioMessages,
-          shortAudioCount: batch.shortAudioCount,
-          textMessageCount: batch.modelTexts.length,
-          forcedHandoffReason,
-        });
-        const presetResult = audioDecision.hasLongAudio && audioDecision.canApplyAutomaticAudioReply
-          ? {
-              reply: "",
-              needsHuman: true,
-              handoffReason: `El cliente envió un audio de ${AUDIO_FORWARD_MIN_SECONDS} segundos o más.`,
-            }
-          : audioDecision.onlyShortAudios
-            ? { reply: "", needsHuman: false, handoffReason: "" }
-            : null;
-        const forcedReply = audioDecision.hasLongAudio && audioDecision.canApplyAutomaticAudioReply
-          ? LONG_AUDIO_HANDOFF_MESSAGE
-          : audioDecision.onlyShortAudios
-            ? SHORT_AUDIO_MESSAGE
-            : null;
-        const replyPrefix =
-          audioDecision.canApplyAutomaticAudioReply &&
-          batch.shortAudioCount > 0 &&
-          batch.modelTexts.length > 0
-            ? SHORT_AUDIO_MESSAGE
-            : "";
-        // Los audios largos siempre se reenvían. Los límites de texto o de
-        // consultas solo cambian el motivo de derivación, no bloquean el audio.
-        const supportMessagesToForward = audioDecision.supportMessagesToForward;
-
-        enqueueContactProcessing(remoteJid, () =>
-          processIncomingMessage({
-            remoteJid,
-            text: combinedText,
-            modelText: combinedModelText || combinedText,
-            pushName: batch.pushName,
-            forcedHandoffReason,
-            presetResult,
-            forcedReply,
-            replyPrefix,
-            supportMessagesToForward,
-          })
-        );
-      };
-
-      if (batch.texts.length >= MAX_BATCH_MESSAGES || batch.totalChars >= MAX_INPUT_CHARS) {
-        batch.timer = null;
-        pendingMessages.set(remoteJid, batch);
-        flushBatch();
+      if (isDuplicateMessage(msg.key.id)) {
+        recordMetric("messages_ignored_duplicate");
         continue;
       }
 
-      batch.timer = setTimeout(flushBatch, RESPONSE_DELAY_MS);
+      console.log(`📩 Mensaje recibido de ${formatContactForLog(remoteJid)}.`);
+      recordMetric("messages_received");
 
-      pendingMessages.set(remoteJid, batch);
+      messageBatcher.add({
+        remoteJid,
+        text,
+        audioInfo,
+        message: msg,
+        pushName: msg.pushName,
+      });
     }
   };
 
@@ -863,17 +793,17 @@ async function startBot() {
 }
 
 try {
-  releaseProcessLock = acquireInstanceLock(INSTANCE_LOCK_PATH);
+  runtime.setReleaseLock(acquireInstanceLock(INSTANCE_LOCK_PATH));
   // Baileys puede dejar temporalmente su WebSocket sin handles referenciados.
   // Este temporizador mantiene vivo el servicio hasta una señal o un error fatal.
-  keepAliveTimer = setInterval(() => {}, 60_000);
+  runtime.startKeepAlive();
   writeBotStatus("starting");
   const restoredAlerts = humanAlertRetryQueue.restore();
   if (restoredAlerts > 0) {
     console.log(`📬 Se recuperaron ${restoredAlerts} aviso(s) pendiente(s); se enviarán al conectar.`);
   }
   console.log(`🚀 ${BUSINESS_NAME} — versión ${APP_VERSION}`);
-  startBot().catch((error) => shutdownAfterFatalError("inicio", error));
+  startBot().catch((error) => runtime.fatal("inicio", error));
 } catch (error) {
   console.error(`❌ No se pudo iniciar el bot: ${error.message}`);
   process.exitCode = 1;

@@ -23,6 +23,8 @@ jobs:
       - run: npm run check
       - run: npm run lint
       - run: npm test
+      - run: npm run evals
+      - run: npm run check:public
 
   audit:
     runs-on: ubuntu-latest

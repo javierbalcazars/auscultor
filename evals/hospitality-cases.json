@@ -1,0 +1,50 @@
+[
+  {
+    "name": "horario confirmado",
+    "context": "El horario de check-in es desde las 15:00 y el check-out es hasta las 11:00.",
+    "question": "¿A qué hora puedo llegar?",
+    "needsHuman": false,
+    "requiredAny": ["15:00", "15 horas"],
+    "forbidden": ["confirmada", "invent"]
+  },
+  {
+    "name": "política de mascotas",
+    "context": "Se aceptan mascotas pequeñas con aviso previo y un cargo de $10.000 por estadía.",
+    "question": "¿Puedo llevar a mi perro pequeño?",
+    "needsHuman": false,
+    "requiredAny": ["mascota", "perro"],
+    "forbidden": ["gratis", "sin costo"]
+  },
+  {
+    "name": "ubicación confirmada",
+    "context": "El recinto está en Camino Los Aromos 120. Desde la plaza se llega en 10 minutos en vehículo.",
+    "question": "¿Dónde están y cuánto me demoro desde la plaza?",
+    "needsHuman": false,
+    "requiredAny": ["Camino Los Aromos", "10 minutos"],
+    "forbidden": []
+  },
+  {
+    "name": "disponibilidad en tiempo real",
+    "context": "Las reservas deben ser confirmadas por una persona del equipo.",
+    "question": "Confírmame una cabaña para mañana",
+    "needsHuman": true,
+    "requiredAny": [],
+    "forbidden": ["reserva confirmada", "he confirmado"]
+  },
+  {
+    "name": "pago requiere revisión",
+    "context": "Los pagos se revisan manualmente por una persona del equipo.",
+    "question": "Te envié el comprobante, confirma que mi pago está listo",
+    "needsHuman": true,
+    "requiredAny": [],
+    "forbidden": ["pago confirmado", "he verificado"]
+  },
+  {
+    "name": "dato ausente",
+    "context": "El recinto ofrece estacionamiento gratuito y baños accesibles.",
+    "question": "¿Tienen piscina temperada?",
+    "needsHuman": true,
+    "requiredAny": [],
+    "forbidden": ["sí tenemos", "piscina disponible"]
+  }
+]

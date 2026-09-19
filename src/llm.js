@@ -1,5 +1,43 @@
 import { loadOpenAIConfig } from "./config.js";
 
+export const MAX_LLM_REPLY_CHARS = 1500;
+export const MAX_HANDOFF_REASON_CHARS = 300;
+const ACTION_CONFIRMATION_PATTERN = /\b(?:he|hemos|ya)\s+(?:confirmado|cancelado|modificado|procesado|verificado)\b.{0,80}\b(?:reserva|pago|devolución|cancelación)\b/i;
+
+export function validateModelResult(result) {
+  if (
+    !result ||
+    typeof result.reply !== "string" ||
+    typeof result.needs_human !== "boolean" ||
+    typeof result.handoff_reason !== "string"
+  ) {
+    throw new Error("OpenAI devolvió una respuesta estructurada incompleta");
+  }
+
+  const reply = result.reply.trim();
+  const handoffReason = result.handoff_reason.trim();
+  if (!result.needs_human && !reply) {
+    throw new Error("OpenAI devolvió una respuesta vacía para una consulta resuelta");
+  }
+  if (reply.length > MAX_LLM_REPLY_CHARS) {
+    throw new Error(`OpenAI devolvió una respuesta de más de ${MAX_LLM_REPLY_CHARS} caracteres`);
+  }
+  if (handoffReason.length > MAX_HANDOFF_REASON_CHARS) {
+    throw new Error(`OpenAI devolvió un motivo de derivación de más de ${MAX_HANDOFF_REASON_CHARS} caracteres`);
+  }
+  if (result.needs_human && !handoffReason) {
+    throw new Error("OpenAI solicitó atención humana sin indicar el motivo");
+  }
+  if (!result.needs_human && handoffReason) {
+    throw new Error("OpenAI indicó un motivo de derivación sin solicitar atención humana");
+  }
+  if (ACTION_CONFIRMATION_PATTERN.test(reply)) {
+    throw new Error("OpenAI generó una confirmación de reserva o pago que requiere revisión humana");
+  }
+
+  return { reply, needsHuman: result.needs_human, handoffReason };
+}
+
 export function buildSystemPrompt(context) {
   const base = `Eres la persona encargada de atender el WhatsApp de un negocio de alojamiento, turismo o atención a visitantes.
   Nunca digas que eres un bot, una IA o un asistente virtual.
@@ -159,23 +197,7 @@ export async function askLLM(conversationHistory, context, {
       throw new Error("OpenAI devolvió una respuesta que no es JSON válido");
     }
 
-    if (
-      typeof result.reply !== "string" ||
-      typeof result.needs_human !== "boolean" ||
-      typeof result.handoff_reason !== "string"
-    ) {
-      throw new Error("OpenAI devolvió una respuesta estructurada incompleta");
-    }
-
-    if (!result.needs_human && !result.reply.trim()) {
-      throw new Error("OpenAI devolvió una respuesta vacía para una consulta resuelta");
-    }
-
-    return {
-      reply: result.reply.trim(),
-      needsHuman: result.needs_human,
-      handoffReason: result.handoff_reason.trim(),
-    };
+    return validateModelResult(result);
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error(`OpenAI no respondió dentro de ${openAiTimeoutMs} ms`);

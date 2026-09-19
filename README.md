@@ -1,6 +1,6 @@
 # Asistente de WhatsApp para alojamientos y turismo
 
-Versión actual: **1.5.2**.
+Versión actual: **1.5.3**.
 
 Atiende consultas simples por WhatsApp para alojamientos, campings, hostales,
 cabañas, arriendos turísticos, parques y otros negocios de turismo o atención a
@@ -15,7 +15,7 @@ encendido, conectado a Internet y sin suspender ni cerrar el proceso durante el
 horario en que se espera atención automática. Para una operación continua se
 recomienda un equipo exclusivo y ejecutar el programa como servicio de `systemd`.
 
-La versión 1.5.2 incluye un panel local pensado para usar el bot como una
+La versión 1.5.3 incluye un panel local pensado para usar el bot como una
 aplicación de escritorio. Desde una sola pantalla se configura el negocio, se
 inicia o detiene el bot, se escanea el QR y se comprueba WhatsApp y OpenAI.
 
@@ -183,6 +183,9 @@ utiliza un token CSRF y nunca devuelve al navegador la API key guardada. La
 comprobación de OpenAI consulta el acceso al modelo, pero no envía conversaciones
 ni garantiza el saldo disponible para solicitudes posteriores.
 
+> **No expongas el puerto 3210 a Internet ni configures redirección de puertos
+> hacia el panel.** Está diseñado exclusivamente para abrirse desde el mismo PC.
+
 Cada guardado valida todos los campos, escribe `.env` con permisos privados y
 conserva hasta diez respaldos en `.local/config-backups`. Los estados y registros
 del panel también se guardan dentro de `.local`, que queda fuera de Git.
@@ -274,6 +277,58 @@ umbral de audios.
 
 Los logs ocultan parcialmente los identificadores de contacto y no imprimen la
 consulta del cliente ni el contenido de las FAQs.
+
+### Evaluaciones del asistente
+
+El repositorio incluye casos de evaluación para horarios, ubicación, mascotas,
+disponibilidad, pagos y datos ausentes. La validación estructural no llama a
+OpenAI ni consume tokens:
+
+```bash
+npm run evals
+```
+
+Para probar esos casos contra la API y el modelo configurado en `.env`, ejecuta
+manualmente `npm run evals:live`. Esa variante sí consume tokens y puede variar
+ligeramente entre ejecuciones.
+
+### Métricas locales
+
+El bot acumula en `data/metrics.json` contadores de mensajes, respuestas,
+derivaciones, audios, reconexiones, límites y solicitudes a OpenAI. También
+registra duración promedio y máxima de las consultas al modelo. No guarda en ese
+archivo números, nombres ni contenido de las conversaciones.
+
+```bash
+npm run metrics
+```
+
+## Respaldo cifrado y restauración
+
+Detén el bot desde el panel antes de respaldar o restaurar para obtener una copia
+consistente de `.env`, `auth_session`, `Vault` y `data`. Define una contraseña de
+al menos 12 caracteres sin escribirla directamente en el historial de comandos:
+
+```bash
+read -s BACKUP_PASSPHRASE
+export BACKUP_PASSPHRASE
+npm run backup -- create ../respaldo-bot.wbackup
+npm run backup -- verify ../respaldo-bot.wbackup
+unset BACKUP_PASSPHRASE
+```
+
+La restauración exige `--apply` y crea primero otro respaldo cifrado del estado
+actual junto al archivo de origen:
+
+```bash
+read -s BACKUP_PASSPHRASE
+export BACKUP_PASSPHRASE
+npm run backup -- restore ../respaldo-bot.wbackup --apply
+unset BACKUP_PASSPHRASE
+```
+
+Conserva el archivo cifrado y su contraseña en lugares separados. Sin la
+contraseña no es posible recuperar el contenido.
 
 ## Funcionamiento continuo con systemd
 
