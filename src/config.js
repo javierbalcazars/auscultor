@@ -6,19 +6,20 @@ import dotenv from "dotenv";
 const SOURCE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
 export const PROJECT_ROOT = path.resolve(SOURCE_DIR, "..");
-export const ENV_PATH = path.join(PROJECT_ROOT, ".env");
+export const DATA_ROOT = path.resolve(process.env.AUSCULTOR_DATA_DIR || PROJECT_ROOT);
+export const ENV_PATH = path.join(DATA_ROOT, ".env");
 export const APP_VERSION = JSON.parse(
   fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf-8")
 ).version;
 
-// La configuración siempre se carga desde la raíz del proyecto, sin importar
-// desde qué carpeta se haya ejecutado Node.
+// En una instalación normal, los datos viven en la raíz del proyecto. La AppImage
+// define AUSCULTOR_DATA_DIR para conservarlos fuera de su sistema de solo lectura.
 dotenv.config({ path: ENV_PATH });
 
 export function resolveProjectPath(targetPath) {
   return path.isAbsolute(targetPath)
     ? targetPath
-    : path.resolve(PROJECT_ROOT, targetPath);
+    : path.resolve(DATA_ROOT, targetPath);
 }
 
 export const AUTH_SESSION_PATH = resolveProjectPath("auth_session");

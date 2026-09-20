@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PROJECT_ROOT } from "./config.js";
+import { DATA_ROOT } from "./config.js";
 
-export const BOT_STATUS_PATH = path.join(PROJECT_ROOT, ".local", "bot-status.json");
+export const BOT_STATUS_PATH = path.join(DATA_ROOT, ".local", "bot-status.json");
 
 export function writeBotStatus(state, details = {}, {
   onlyIfCurrentProcess = false,

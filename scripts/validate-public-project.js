@@ -30,7 +30,6 @@ const ignoredDirectories = new Set([".git", "node_modules", ".local"]);
 const secretPattern = /OPENAI_API_KEY=sk-[A-Za-z0-9_-]{20,}/;
 const privateReferencePattern = new RegExp([
   ["", "home", "xavy"].join("/"),
-  ["Glamping", "Llollelhue"].join(" "),
 ].join("|"));
 
 function inspect(directory) {

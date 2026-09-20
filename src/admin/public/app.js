@@ -12,6 +12,20 @@ const qrCode = document.querySelector("#qr-code");
 const whatsappLed = document.querySelector("#whatsapp-led");
 const openAiLed = document.querySelector("#openai-led");
 const botProcessLed = document.querySelector("#bot-process-led");
+const setupWelcome = document.querySelector("#setup-welcome");
+const configActions = document.querySelector("#config-actions");
+const faqList = document.querySelector("#faq-list");
+const faqName = document.querySelector("#faq-name");
+const faqContent = document.querySelector("#faq-content");
+const faqMessage = document.querySelector("#faq-message");
+const faqTemplate = document.querySelector("#faq-template");
+const createBackupButton = document.querySelector("#create-backup");
+const toolsMessage = document.querySelector("#tools-message");
+const restoreBackupButton = document.querySelector("#restore-backup");
+const backupSelect = document.querySelector("#backup-select");
+let faqDocuments = [];
+let faqTemplates = [];
+let selectedFaq = null;
 let csrfToken = "";
 let botRunning = false;
 const knownModels = new Set([
@@ -53,12 +67,14 @@ function showMessage(text, error = false) {
 
 function setEditingLocked(locked) {
   botRunning = locked;
-  form.querySelectorAll("input, textarea, select").forEach((field) => {
+  form.querySelectorAll("input:not([data-live-edit]), textarea:not([data-live-edit]), select:not([data-live-edit])").forEach((field) => {
     field.disabled = locked;
   });
   document.querySelector("#toggle-key").disabled = locked;
   saveButton.disabled = locked;
   form.classList.toggle("locked", locked);
+  createBackupButton.disabled = locked;
+  restoreBackupButton.disabled = locked;
   if (locked) showMessage("Detén el bot para modificar la configuración.", true);
   else if (message.textContent === "Detén el bot para modificar la configuración.") showMessage("");
 }
@@ -68,6 +84,7 @@ function openPanel(panel) {
   document.querySelectorAll(".tabs button, .panel").forEach((item) => item.classList.remove("active"));
   panel.classList.add("active");
   document.querySelector(`.tabs button[data-target="${panel.id}"]`)?.classList.add("active");
+  configActions.classList.toggle("hidden", ["faqs", "herramientas"].includes(panel.id));
 }
 
 function fill(config) {
@@ -94,6 +111,7 @@ async function load() {
     if (!response.ok) throw new Error(body.error);
     csrfToken = body.csrfToken;
     fill(body.config);
+    setupWelcome.classList.toggle("hidden", !body.setupRequired);
   } catch (error) {
     showMessage(error.message, true);
   }
@@ -226,6 +244,7 @@ form.addEventListener("submit", async (event) => {
     if (!response.ok) throw new Error(body.error);
     form.elements.OPENAI_API_KEY.value = "";
     fill(body.config);
+    setupWelcome.classList.add("hidden");
     showMessage(body.message);
   } catch (error) {
     showMessage(error.message, true);
@@ -238,3 +257,210 @@ load();
 updateBotStatus();
 updateHealth();
 setInterval(updateBotStatus, 5000);
+
+
+function showFaqMessage(text, error = false) {
+  faqMessage.textContent = text;
+  faqMessage.className = error ? "error" : "success";
+}
+
+function selectFaq(name) {
+  const document = faqDocuments.find((item) => item.name === name);
+  selectedFaq = document?.name || null;
+  faqName.value = document?.name || "";
+  faqContent.value = document?.content || "";
+  document.querySelector("#delete-faq").disabled = !document;
+  faqList.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.name === selectedFaq));
+  showFaqMessage("");
+}
+
+function renderFaqs() {
+  faqList.replaceChildren(...faqDocuments.map((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.name = item.name;
+    button.textContent = item.name.replace(/\.md$/i, "");
+    button.addEventListener("click", () => selectFaq(item.name));
+    return button;
+  }));
+  if (selectedFaq && faqDocuments.some((item) => item.name === selectedFaq)) selectFaq(selectedFaq);
+  else if (faqDocuments[0]) selectFaq(faqDocuments[0].name);
+  else selectFaq(null);
+}
+
+async function loadFaqs() {
+  try {
+    const response = await fetch("/api/faqs", { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    faqDocuments = body.documents;
+    faqTemplates = body.templates;
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Usar plantilla…";
+    const options = faqTemplates.map((template, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = template.name.replace(/\.md$/i, "");
+      return option;
+    });
+    faqTemplate.replaceChildren(placeholder, ...options);
+    renderFaqs();
+  } catch (error) {
+    showFaqMessage(error.message, true);
+  }
+}
+
+document.querySelector("#new-faq").addEventListener("click", () => {
+  selectedFaq = null;
+  faqName.value = "Nueva información.md";
+  faqContent.value = "# Nueva información\n\n";
+  document.querySelector("#delete-faq").disabled = true;
+  faqList.querySelectorAll("button").forEach((button) => button.classList.remove("active"));
+  faqName.focus();
+});
+
+faqTemplate.addEventListener("change", () => {
+  if (faqTemplate.value === "") return;
+  const template = faqTemplates[Number(faqTemplate.value)];
+  selectedFaq = null;
+  faqName.value = template.name;
+  faqContent.value = template.content;
+  document.querySelector("#delete-faq").disabled = true;
+  faqTemplate.value = "";
+});
+
+document.querySelector("#save-faq").addEventListener("click", async () => {
+  showFaqMessage("Guardando…");
+  try {
+    const response = await fetch("/api/faqs", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({ originalName: selectedFaq, name: faqName.value, content: faqContent.value }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    selectedFaq = body.document.name;
+    await loadFaqs();
+    showFaqMessage(body.message);
+  } catch (error) {
+    showFaqMessage(error.message, true);
+  }
+});
+
+document.querySelector("#delete-faq").addEventListener("click", async () => {
+  if (!selectedFaq || !confirm(`¿Eliminar “${selectedFaq}”? Se conservará un respaldo local.`)) return;
+  try {
+    const response = await fetch("/api/faqs", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({ name: selectedFaq }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    selectedFaq = null;
+    await loadFaqs();
+    showFaqMessage(body.message);
+  } catch (error) {
+    showFaqMessage(error.message, true);
+  }
+});
+
+loadFaqs();
+
+
+function toolResult(name, ok, detail) {
+  const row = document.createElement("div");
+  row.className = `tool-result ${ok ? "ok" : "bad"}`;
+  const label = document.createElement("b");
+  label.textContent = `${ok ? "OK" : "Revisar"} · ${name}`;
+  const value = document.createElement("span");
+  value.textContent = detail;
+  row.append(label, value);
+  return row;
+}
+
+async function loadTools() {
+  try {
+    const response = await fetch("/api/tools", { cache: "no-store" });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    document.querySelector("#diagnostic-results").replaceChildren(...body.checks.map((check) => toolResult(check.name, check.ok, check.detail)));
+    const metricRows = [
+      ["Desde", new Date(body.metrics.startedAt).toLocaleString()],
+      ["Mensajes vistos", String(body.metrics.counters.messages_seen_by_baileys || 0)],
+      ["Respuestas enviadas", String(body.metrics.counters.replies_sent || 0)],
+      ["Derivaciones", String(body.metrics.counters.handoffs || 0)],
+      ["Solicitudes a OpenAI", String(body.metrics.counters.openai_requests || 0)],
+    ];
+    document.querySelector("#metrics-results").replaceChildren(...metricRows.map(([name, detail]) => toolResult(name, true, detail)));
+    const backupPlaceholder = document.createElement("option");
+    backupPlaceholder.value = "";
+    backupPlaceholder.textContent = "Respaldos disponibles…";
+    const backupOptions = body.backups.map((backup) => {
+      const option = document.createElement("option");
+      option.value = backup.name;
+      option.textContent = `${new Date(backup.updatedAt).toLocaleString()} · ${Math.ceil(backup.size / 1024)} KB`;
+      return option;
+    });
+    backupSelect.replaceChildren(backupPlaceholder, ...backupOptions);
+  } catch (error) {
+    toolsMessage.textContent = error.message;
+    toolsMessage.className = "error";
+  }
+}
+
+document.querySelector("#refresh-tools").addEventListener("click", loadTools);
+createBackupButton.addEventListener("click", async () => {
+  const passphrase = document.querySelector("#backup-passphrase").value;
+  toolsMessage.textContent = "Creando respaldo…";
+  toolsMessage.className = "";
+  try {
+    const response = await fetch("/api/tools/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({ passphrase }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    document.querySelector("#backup-passphrase").value = "";
+    toolsMessage.textContent = body.message;
+    toolsMessage.className = "success";
+    await loadTools();
+  } catch (error) {
+    toolsMessage.textContent = error.message;
+    toolsMessage.className = "error";
+  }
+});
+
+loadTools();
+
+
+restoreBackupButton.addEventListener("click", async () => {
+  const name = backupSelect.value;
+  const passphrase = document.querySelector("#backup-passphrase").value;
+  if (!name) {
+    toolsMessage.textContent = "Selecciona un respaldo.";
+    toolsMessage.className = "error";
+    return;
+  }
+  if (!confirm("La configuración, sesión, Vault y datos actuales serán reemplazados. Se creará un respaldo previo. ¿Continuar?")) return;
+  toolsMessage.textContent = "Verificando y restaurando…";
+  toolsMessage.className = "";
+  try {
+    const response = await fetch("/api/tools/restore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+      body: JSON.stringify({ name, passphrase, confirmed: true }),
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    document.querySelector("#backup-passphrase").value = "";
+    toolsMessage.textContent = body.message;
+    toolsMessage.className = "success";
+    await Promise.all([load(), loadFaqs(), loadTools()]);
+  } catch (error) {
+    toolsMessage.textContent = error.message;
+    toolsMessage.className = "error";
+  }
+});

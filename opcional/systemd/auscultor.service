@@ -7,15 +7,13 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-User=[USER]
-WorkingDirectory=/home/[USER]/auscultor
-# Si Node se instaló con nvm, reemplazar /usr/bin/node por "command -v node".
-ExecStart=/usr/bin/node /home/[USER]/auscultor/src/index.js
+User=__USER__
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=__NODE__ __PROJECT_DIR__/src/index.js
 Restart=on-failure
 RestartSec=15
 TimeoutStopSec=20
 Environment=NODE_ENV=production
-Environment=TZ=America/Santiago
 UMask=0077
 NoNewPrivileges=true
 StandardOutput=journal

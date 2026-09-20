@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Auscultor</title>
+  <desc id="description">Una letra A con ondas que representan escucha y atención.</desc>
+  <defs>
+    <linearGradient id="background" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35d07f"/>
+      <stop offset="1" stop-color="#138a54"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#03150d" flood-opacity=".32"/>
+    </filter>
+  </defs>
+  <rect x="28" y="28" width="456" height="456" rx="116" fill="#09110f"/>
+  <rect x="44" y="44" width="424" height="424" rx="102" fill="url(#background)" filter="url(#shadow)"/>
+  <path d="M132 365 230 142c10-23 42-23 52 0l98 223" fill="none" stroke="#062013" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M177 291h158" fill="none" stroke="#062013" stroke-width="35" stroke-linecap="round"/>
+  <path d="M343 158c30 18 49 50 49 86s-19 68-49 86" fill="none" stroke="#eafff2" stroke-width="20" stroke-linecap="round"/>
+  <path d="M376 119c42 29 68 75 68 125s-26 96-68 125" fill="none" stroke="#eafff2" stroke-width="17" stroke-linecap="round" opacity=".86"/>
+  <circle cx="321" cy="244" r="13" fill="#eafff2"/>
+</svg>

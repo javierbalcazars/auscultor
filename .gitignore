@@ -21,3 +21,6 @@ docs/pendientes-glamping.md
 
 # Solo se versionan las FAQs genéricas incluidas con el proyecto.
 # Los chats y demás contenido local del Vault permanecen privados.
+dist/
+dist-electron/
+*.AppImage

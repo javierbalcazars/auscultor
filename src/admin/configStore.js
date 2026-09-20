@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
-import { ENV_PATH, PROJECT_ROOT } from "../config.js";
+import { DATA_ROOT, ENV_PATH } from "../config.js";
 
 export const CONFIG_FIELDS = {
   VAULT_PATH: "./Vault",
@@ -123,7 +123,7 @@ function serialize(config) {
   return `${groups.map(([title, ...keys]) => `${title}\n${keys.map((key) => `${key}=${config[key]}`).join("\n")}`).join("\n\n")}\n`;
 }
 
-export function saveAdminConfig(input, envPath = ENV_PATH, { backupRoot = PROJECT_ROOT, maxBackups = 10 } = {}) {
+export function saveAdminConfig(input, envPath = ENV_PATH, { backupRoot = DATA_ROOT, maxBackups = 10 } = {}) {
   const existing = fs.existsSync(envPath) ? dotenv.parse(fs.readFileSync(envPath)) : {};
   const config = validateAdminConfig(input, existing);
   if (fs.existsSync(envPath)) {

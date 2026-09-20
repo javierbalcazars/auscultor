@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { setTimeout as wait } from "node:timers/promises";
-import { AUTH_SESSION_PATH, INSTANCE_LOCK_PATH, PROJECT_ROOT } from "../config.js";
+import { AUTH_SESSION_PATH, DATA_ROOT, INSTANCE_LOCK_PATH, PROJECT_ROOT } from "../config.js";
 import { readBotStatus } from "../botStatus.js";
 
 const BOT_ENTRYPOINT = path.join(PROJECT_ROOT, "src", "index.js");
@@ -43,7 +43,7 @@ function processMatchesBot(processId) {
   try {
     const commandLine = fs.readFileSync(path.join(procRoot, "cmdline"), "utf8").replace(/\0/g, "\n");
     const workingDirectory = fs.readlinkSync(path.join(procRoot, "cwd"));
-    return workingDirectory === PROJECT_ROOT && (
+    return workingDirectory === DATA_ROOT && (
       commandLine.includes(BOT_ENTRYPOINT) ||
       commandLine.includes("src/index.js")
     );
@@ -99,16 +99,19 @@ export function stopBotProcess({ lockPath = INSTANCE_LOCK_PATH } = {}) {
 
 export function startBotProcess() {
   if (botIsRunning()) return false;
-  const localDirectory = path.join(PROJECT_ROOT, ".local");
+  const localDirectory = path.join(DATA_ROOT, ".local");
   const logPath = path.join(localDirectory, "bot.log");
   fs.mkdirSync(localDirectory, { recursive: true, mode: 0o700 });
   fs.chmodSync(localDirectory, 0o700);
   fs.closeSync(fs.openSync(logPath, "a", 0o600));
   fs.chmodSync(logPath, 0o600);
 
-  const result = spawnSync("systemd-run", [
+  const childEnvironment = process.versions.electron
+    ? { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
+    : process.env;
+  const result = process.versions.electron ? { status: null, stderr: "" } : spawnSync("systemd-run", [
     "--user", "--collect", `--unit=auscultor-${Date.now()}`,
-    `--property=WorkingDirectory=${PROJECT_ROOT}`,
+    `--property=WorkingDirectory=${DATA_ROOT}`,
     `--property=StandardOutput=append:${logPath}`,
     `--property=StandardError=append:${logPath}`,
     process.execPath, path.join(PROJECT_ROOT, "src", "index.js"),
@@ -118,8 +121,9 @@ export function startBotProcess() {
   const logDescriptor = fs.openSync(logPath, "a", 0o600);
   try {
     const child = spawn(process.execPath, [BOT_ENTRYPOINT], {
-      cwd: PROJECT_ROOT,
+      cwd: DATA_ROOT,
       detached: true,
+      env: childEnvironment,
       stdio: ["ignore", logDescriptor, logDescriptor],
     });
     child.unref();

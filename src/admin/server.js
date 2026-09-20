@@ -4,8 +4,11 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ENV_PATH } from "../config.js";
 import { readAdminConfig, saveAdminConfig } from "./configStore.js";
+import { createAdminBackup, readAdminTools, restoreAdminBackup } from "./adminTools.js";
 import { botIsRunning, currentBotStatus, resetWhatsAppSession, startBotProcess, stopBotProcess } from "./botProcessManager.js";
+import { deleteFaq, FAQ_TEMPLATES, listFaqs, saveFaq } from "./faqStore.js";
 import { createOpenAiHealthChecker } from "./openAiHealth.js";
 
 const HOST = "127.0.0.1";
@@ -16,6 +19,7 @@ const assets = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
+  ["/icon.svg", ["icon.svg", "image/svg+xml"]],
 ]);
 const openAiHealth = createOpenAiHealthChecker();
 
@@ -24,13 +28,33 @@ function json(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
+function activePort() {
+  const address = server.address();
+  return typeof address === "object" && address ? address.port : PORT;
+}
+
 function allowedOrigin(request) {
   const origin = request.headers.origin;
-  return !origin || origin === `http://${HOST}:${PORT}` || origin === `http://localhost:${PORT}`;
+  const port = activePort();
+  return !origin || origin === `http://${HOST}:${port}` || origin === `http://localhost:${port}`;
 }
 
 function allowedHost(request) {
-  return request.headers.host === `${HOST}:${PORT}` || request.headers.host === `localhost:${PORT}`;
+  const port = activePort();
+  return request.headers.host === `${HOST}:${port}` || request.headers.host === `localhost:${port}`;
+}
+
+function authorized(request) {
+  return allowedOrigin(request) && request.headers["x-csrf-token"] === TOKEN;
+}
+
+async function readJson(request, limit = 300_000) {
+  let raw = "";
+  for await (const chunk of request) {
+    raw += chunk;
+    if (raw.length > limit) throw new Error("La solicitud es demasiado grande");
+  }
+  return JSON.parse(raw || "{}");
 }
 
 const server = http.createServer(async (request, response) => {
@@ -40,7 +64,36 @@ const server = http.createServer(async (request, response) => {
   try {
     if (!allowedHost(request)) return json(response, 403, { error: "Host rechazado" });
     if (request.method === "GET" && request.url === "/api/config") {
-      return json(response, 200, { config: readAdminConfig(), csrfToken: TOKEN });
+      return json(response, 200, { config: readAdminConfig(), csrfToken: TOKEN, setupRequired: !fs.existsSync(ENV_PATH) });
+    }
+    if (request.method === "GET" && request.url === "/api/faqs") {
+      return json(response, 200, { documents: listFaqs(), templates: FAQ_TEMPLATES });
+    }
+    if (request.method === "PUT" && request.url === "/api/faqs") {
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
+      const document = saveFaq(await readJson(request));
+      return json(response, 200, { document, message: "Información guardada y disponible para las próximas respuestas." });
+    }
+    if (request.method === "DELETE" && request.url === "/api/faqs") {
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
+      deleteFaq((await readJson(request)).name);
+      return json(response, 200, { message: "FAQ eliminada. Se conservó un respaldo local." });
+    }
+    if (request.method === "GET" && request.url === "/api/tools") {
+      return json(response, 200, readAdminTools());
+    }
+    if (request.method === "POST" && request.url === "/api/tools/backup") {
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
+      if (botIsRunning()) return json(response, 409, { error: "Detén el bot antes de crear un respaldo" });
+      const result = await createAdminBackup((await readJson(request, 10_000)).passphrase);
+      return json(response, 201, { message: `Respaldo cifrado creado en ${result.destination}`, included: result.included });
+    }
+    if (request.method === "POST" && request.url === "/api/tools/restore") {
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
+      if (botIsRunning()) return json(response, 409, { error: "Detén el bot antes de restaurar" });
+      const input = await readJson(request, 10_000);
+      const result = await restoreAdminBackup(input.name, input.passphrase, input.confirmed);
+      return json(response, 200, { message: `Restauración completada. Respaldo previo: ${result.rollback}` });
     }
     if (request.method === "GET" && request.url === "/api/status") {
       return json(response, 200, currentBotStatus());
@@ -54,35 +107,24 @@ const server = http.createServer(async (request, response) => {
       });
     }
     if (request.method === "POST" && request.url === "/api/bot/stop") {
-      if (!allowedOrigin(request) || request.headers["x-csrf-token"] !== TOKEN) return json(response, 403, { error: "Solicitud rechazada" });
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
       const stopped = stopBotProcess();
       return json(response, 200, { stopped, message: stopped ? "Se solicitó detener el bot." : "El bot ya estaba detenido." });
     }
     if (request.method === "POST" && request.url === "/api/bot/start") {
-      if (!allowedOrigin(request) || request.headers["x-csrf-token"] !== TOKEN) return json(response, 403, { error: "Solicitud rechazada" });
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
       const started = startBotProcess();
-      return json(response, started ? 202 : 200, {
-        started,
-        message: started ? "El bot se está iniciando." : "El bot ya está activo.",
-      });
+      return json(response, started ? 202 : 200, { started, message: started ? "El bot se está iniciando." : "El bot ya está activo." });
     }
     if (request.method === "POST" && request.url === "/api/whatsapp/reset") {
-      if (!allowedOrigin(request) || request.headers["x-csrf-token"] !== TOKEN) return json(response, 403, { error: "Solicitud rechazada" });
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
       await resetWhatsAppSession();
-      return json(response, 202, {
-        reset: true,
-        message: "Sesión de WhatsApp eliminada. Esperando un QR nuevo.",
-      });
+      return json(response, 202, { reset: true, message: "Sesión de WhatsApp eliminada. Esperando un QR nuevo." });
     }
     if (request.method === "PUT" && request.url === "/api/config") {
-      if (!allowedOrigin(request) || request.headers["x-csrf-token"] !== TOKEN) return json(response, 403, { error: "Solicitud rechazada" });
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
       if (botIsRunning()) return json(response, 409, { error: "Detén el bot antes de modificar la configuración" });
-      let raw = "";
-      for await (const chunk of request) {
-        raw += chunk;
-        if (raw.length > 100_000) throw new Error("La solicitud es demasiado grande");
-      }
-      const config = saveAdminConfig(JSON.parse(raw));
+      const config = saveAdminConfig(await readJson(request, 100_000));
       openAiHealth.reset();
       return json(response, 200, { config, message: "Configuración guardada. Reinicia el bot para aplicarla." });
     }
@@ -92,13 +134,13 @@ const server = http.createServer(async (request, response) => {
       response.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-store" });
       return response.end(fs.readFileSync(path.join(PUBLIC_DIR, file)));
     }
-    json(response, 404, { error: "No encontrado" });
+    return json(response, 404, { error: "No encontrado" });
   } catch (error) {
-    json(response, 400, { error: error instanceof SyntaxError ? "El contenido enviado no es JSON válido" : error.message });
+    return json(response, 400, { error: error instanceof SyntaxError ? "El contenido enviado no es JSON válido" : error.message });
   }
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Panel de configuración disponible en http://${HOST}:${PORT}`);
+  console.log(`Panel de configuración disponible en http://${HOST}:${activePort()}`);
   console.log("El panel solo acepta conexiones desde este equipo.");
 });

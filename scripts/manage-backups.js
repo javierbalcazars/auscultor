@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PROJECT_ROOT } from "../src/config.js";
+import { DATA_ROOT } from "../src/config.js";
 import {
   createEncryptedBackup,
   restoreEncryptedBackup,
@@ -21,17 +21,17 @@ if (!passphrase) {
 const targetPath = path.resolve(target);
 if (command === "create") {
   if (fs.existsSync(targetPath)) throw new Error(`El destino ya existe: ${targetPath}`);
-  const result = await createEncryptedBackup(PROJECT_ROOT, targetPath, passphrase);
+  const result = await createEncryptedBackup(DATA_ROOT, targetPath, passphrase);
   console.log(`Respaldo cifrado creado: ${result.destination}`);
   console.log(`Incluye: ${result.included.join(", ")}`);
 } else if (command === "verify") {
-  const entries = await verifyEncryptedBackup(PROJECT_ROOT, targetPath, passphrase);
+  const entries = await verifyEncryptedBackup(DATA_ROOT, targetPath, passphrase);
   console.log(`Respaldo válido: ${entries.length} entrada(s).`);
 } else {
   if (confirmation !== "--apply") throw new Error("La restauración requiere confirmar con --apply");
   const rollback = `${targetPath}.antes-de-restaurar-${new Date().toISOString().replace(/[:.]/g, "-")}.wbackup`;
-  await createEncryptedBackup(PROJECT_ROOT, rollback, passphrase);
-  const entries = await restoreEncryptedBackup(PROJECT_ROOT, targetPath, passphrase);
+  await createEncryptedBackup(DATA_ROOT, rollback, passphrase);
+  const entries = await restoreEncryptedBackup(DATA_ROOT, targetPath, passphrase);
   console.log(`Restauración completada: ${entries.length} entrada(s).`);
   console.log(`Respaldo previo de seguridad: ${rollback}`);
 }

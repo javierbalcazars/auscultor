@@ -1,10 +1,10 @@
 {
   "name": "auscultor",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "type": "module",
   "description": "Asistente local de atención para alojamientos y turismo mediante WhatsApp e inteligencia artificial",
   "license": "AGPL-3.0-or-later",
-  "main": "src/index.js",
+  "main": "src/desktop/main.js",
   "engines": {
     "node": ">=24 <27"
   },
@@ -20,7 +20,9 @@
     "metrics": "node scripts/show-metrics.js",
     "diagnostics": "node scripts/diagnostics.js",
     "chats": "node scripts/manage-chats.js",
-    "admin": "node src/admin/server.js"
+    "admin": "node src/admin/server.js",
+    "desktop": "electron .",
+    "desktop:build": "bash packaging/electron/build-desktop.sh"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
@@ -29,6 +31,39 @@
     "qrcode-terminal": "^0.12.0"
   },
   "devDependencies": {
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3",
     "eslint": "^10.10.0"
-  }
+  },
+  "build": {
+    "appId": "org.auscultor.desktop",
+    "productName": "Auscultor",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.so",
+      "**/*.so.*"
+    ],
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "packaging/default-data/**/*",
+      "package.json",
+      "LICENSE"
+    ],
+    "directories": {
+      "output": "dist-electron"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Network",
+      "icon": "assets/auscultor.png",
+      "artifactName": "Auscultor-Desktop-${version}-${arch}.${ext}",
+      "syncDesktopName": true
+    }
+  },
+  "author": "Javier Balcazar",
+  "desktopName": "Auscultor"
 }
