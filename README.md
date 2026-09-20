@@ -34,22 +34,24 @@ a Internet. Puede ser un equipo dedicado o un computador de uso cotidiano.
 Auscultor se distribuye como una única aplicación de escritorio para Linux x86_64. La AppImage incluye Electron, Chromium, Node.js, Baileys y las demás dependencias: el usuario no necesita instalar Node, npm, Python, Git ni compiladores.
 
 1. Abre **Releases** en GitHub.
-2. Descarga `Auscultor-Desktop-1.7.0-x86_64.AppImage`.
+2. Descarga `Auscultor-Desktop-1.7.1-x86_64.AppImage`.
 3. Dale permiso de ejecución:
 
 ```bash
-chmod +x Auscultor-Desktop-1.7.0-x86_64.AppImage
+chmod +x Auscultor-Desktop-1.7.1-x86_64.AppImage
 ```
 
 4. Ábrela con doble clic o ejecuta:
 
 ```bash
-./Auscultor-Desktop-1.7.0-x86_64.AppImage
+./Auscultor-Desktop-1.7.1-x86_64.AppImage
 ```
 
 Auscultor abre una ventana propia, elige automáticamente un puerto local libre y permanece en la bandeja cuando se cierra la ventana. Desde el icono de la bandeja puedes volver a mostrarla o elegir **Salir**, lo que detiene el bot de forma segura.
 
 Los únicos requisitos externos son Linux x86_64, conexión a Internet, una cuenta de WhatsApp y una API key de OpenAI activa. Los datos se conservan en `~/.local/share/Auscultor`, incluso al reemplazar la AppImage por una actualización.
+
+A partir de la versión 1.7.1, la AppImage incorpora información de actualización compatible con Gear Lever. Después de importar esta versión manualmente, Gear Lever puede detectar las releases posteriores desde GitHub y aplicar actualizaciones diferenciales mediante `.zsync`.
 
 Quienes desarrollen Auscultor desde el código fuente necesitan Node.js 24 a 26, npm, Git, Python 3 y herramientas de compilación. La guía técnica de construcción está en [packaging/electron/README.md](packaging/electron/README.md).
 
