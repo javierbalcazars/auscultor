@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { APP_VERSION, loadOpenAIConfig, loadRuntimeConfig } from "../src/config.js";
+import { APP_VERSION, loadBotRuntimeConfig, loadOpenAIConfig, loadRuntimeConfig } from "../src/config.js";
 
 function validEnvironment() {
   return {
@@ -84,6 +84,32 @@ test("rechaza secretos ausentes, números inválidos y rutas inseguras", (t) => 
   assert.throws(() =>
     loadRuntimeConfig({ ...validEnvironment(), MAX_HISTORY_MESSAGES: "20", MAX_STORED_MESSAGES: "10" }, vault)
   );
+});
+
+test("permite iniciar WhatsApp sin API key cuando OpenAI se valida al usarlo", (t) => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-"));
+  t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
+  addValidFaq(vault);
+
+  const config = loadRuntimeConfig(
+    { ...validEnvironment(), OPENAI_API_KEY: "" },
+    vault,
+    { requireOpenAI: false }
+  );
+
+  assert.equal(config.businessName, "Mi Negocio");
+});
+
+test("solo omite la API key durante la configuración de WhatsApp", (t) => {
+  const vault = fs.mkdtempSync(path.join(os.tmpdir(), "auscultor-config-mode-"));
+  t.after(() => fs.rmSync(vault, { recursive: true, force: true }));
+  addValidFaq(vault);
+  const environment = { ...validEnvironment(), OPENAI_API_KEY: "" };
+
+  assert.throws(() => loadBotRuntimeConfig(environment, vault), /OPENAI_API_KEY/);
+  const setup = loadBotRuntimeConfig({ ...environment, AUSCULTOR_CONFIGURATION_ONLY: "1" }, vault);
+  assert.equal(setup.configurationOnly, true);
+  assert.equal(setup.businessName, "Mi Negocio");
 });
 
 test("rechaza un Vault sin documentos de preguntas frecuentes", (t) => {

@@ -71,8 +71,18 @@ export function loadOpenAIConfig(environment = process.env) {
   };
 }
 
-export function loadRuntimeConfig(environment = process.env, vaultPath = VAULT_PATH) {
-  loadOpenAIConfig(environment);
+export function loadBotRuntimeConfig(environment = process.env, vaultPath = VAULT_PATH) {
+  const configurationOnly = environment.AUSCULTOR_CONFIGURATION_ONLY === "1";
+  return {
+    configurationOnly,
+    ...loadRuntimeConfig(environment, vaultPath, { requireOpenAI: !configurationOnly }),
+  };
+}
+
+export function loadRuntimeConfig(environment = process.env, vaultPath = VAULT_PATH, {
+  requireOpenAI = true,
+} = {}) {
+  if (requireOpenAI) loadOpenAIConfig(environment);
 
   const businessName = (environment.BUSINESS_NAME || "Mi Negocio").trim();
   if (!businessName || businessName.length > 100 || /[\r\n]/.test(businessName)) {

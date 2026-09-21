@@ -33,13 +33,24 @@ export function readAdminTools() {
     const config = loadRuntimeConfig();
     checks.push({ name: "Configuración", ok: true, detail: `${config.humanSupportJids.length} encargado(s)` });
   } catch (error) {
-    checks.push({ name: "Configuración", ok: false, detail: error.message });
+    const detail = /OPENAI_API_KEY|API key de OpenAI/.test(error.message)
+      ? "Falta configurar API key"
+      : error.message;
+    checks.push({ name: "Configuración", ok: false, detail });
   }
   checks.push({ name: ".env", ok: fs.existsSync(ENV_PATH), detail: `permisos ${modeOf(ENV_PATH)}` });
   checks.push({ name: "Vault", ok: fs.existsSync(VAULT_PATH), detail: VAULT_PATH });
   const faqCount = fs.existsSync(FAQS_PATH) ? fs.readdirSync(FAQS_PATH).filter((name) => name.toLowerCase().endsWith(".md")).length : 0;
   checks.push({ name: "FAQs", ok: faqCount > 0, detail: `${faqCount} documento(s)` });
-  checks.push({ name: "WhatsApp", ok: fs.existsSync(path.join(AUTH_SESSION_PATH, "creds.json")), detail: fs.existsSync(AUTH_SESSION_PATH) ? `permisos ${modeOf(AUTH_SESSION_PATH)}` : "sin sesión" });
+  const authSessionExists = fs.existsSync(AUTH_SESSION_PATH);
+  const credentialsExist = fs.existsSync(path.join(AUTH_SESSION_PATH, "creds.json"));
+  checks.push({
+    name: "WhatsApp",
+    ok: credentialsExist,
+    detail: credentialsExist
+      ? `permisos ${modeOf(AUTH_SESSION_PATH)}`
+      : (authSessionExists ? "QR pendiente de escanear" : "sin sesión"),
+  });
   return { checks, metrics: createMetricsStore(METRICS_PATH).read(), backups: listBackups() };
 }
 

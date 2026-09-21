@@ -6,6 +6,9 @@ const manualModel = document.querySelector("#manual-model");
 const modelHelp = document.querySelector("#model-help");
 const startBotButton = document.querySelector("#start-bot");
 const resetWhatsAppButton = document.querySelector("#reset-whatsapp");
+const generateQrButton = document.querySelector("#generate-qr");
+const cancelQrButton = document.querySelector("#cancel-qr");
+const generateQrAction = document.querySelector("#generate-qr-action");
 const whatsappLink = document.querySelector("#whatsapp-link");
 const qrView = document.querySelector("#qr-view");
 const qrCode = document.querySelector("#qr-code");
@@ -28,6 +31,10 @@ let faqTemplates = [];
 let selectedFaq = null;
 let csrfToken = "";
 let botRunning = false;
+let configuration = { hasOpenAiApiKey: false, HUMAN_SUPPORT_NUMBERS: [] };
+let openAiReady = false;
+let whatsappState = "unlinked";
+let configurationOnly = false;
 const knownModels = new Set([
   "gpt-4o-mini",
   "gpt-5-nano",
@@ -75,8 +82,21 @@ function setEditingLocked(locked) {
   form.classList.toggle("locked", locked);
   createBackupButton.disabled = locked;
   restoreBackupButton.disabled = locked;
+  generateQrButton.disabled = locked;
   if (locked) showMessage("Detén el bot para modificar la configuración.", true);
   else if (message.textContent === "Detén el bot para modificar la configuración.") showMessage("");
+  refreshStartButton();
+}
+
+function hasSupportNumber() {
+  const numbers = configuration.HUMAN_SUPPORT_NUMBERS;
+  return (Array.isArray(numbers) ? numbers : String(numbers || "").split(/[\n,]/)).some((number) => String(number).replace(/\D/g, "").length >= 8);
+}
+
+function refreshStartButton() {
+  const requirementsReady = configuration.hasOpenAiApiKey && openAiReady && hasSupportNumber() && whatsappState === "linked";
+  startBotButton.textContent = botRunning && !configurationOnly ? "🤖 Detener bot" : "🤖 Iniciar bot";
+  startBotButton.disabled = !(requirementsReady && (!botRunning || configurationOnly));
 }
 
 function openPanel(panel) {
@@ -93,6 +113,13 @@ function fill(config) {
     if (!field) continue;
     field.value = Array.isArray(value) ? value.join("\n") : value;
   }
+  const supportNumbers = Array.isArray(config.HUMAN_SUPPORT_NUMBERS)
+    ? config.HUMAN_SUPPORT_NUMBERS
+    : String(config.HUMAN_SUPPORT_NUMBERS || "").split(/[\n,]/).filter(Boolean);
+  form.elements.namedItem("HUMAN_SUPPORT_NUMBERS").value = supportNumbers[0] || "";
+  form.elements.namedItem("ADDITIONAL_SUPPORT_NUMBERS").value = supportNumbers.slice(1).join("\n");
+  configuration = config;
+  refreshStartButton();
   updateModelControl(knownModels.has(config.OPENAI_MODEL) ? config.OPENAI_MODEL : "manual", config.OPENAI_MODEL);
   document.querySelector("#key-help").textContent = config.hasOpenAiApiKey
     ? "Hay una clave guardada. Déjala vacía para conservarla."
@@ -125,20 +152,22 @@ async function updateBotStatus() {
     const botLabel = botProcessLed.parentElement.querySelector("b");
     const botDetail = botProcessLed.parentElement.querySelector("small");
     botProcessLed.classList.remove("checking", "healthy", "unhealthy");
-    if (body.running) {
-      botProcessLed.classList.add("healthy");
-      botLabel.textContent = "Bot encendido";
-    } else {
+    whatsappState = body.whatsappState;
+    configurationOnly = body.running && body.configurationOnly === true;
+    if (!body.running || configurationOnly) {
       botProcessLed.classList.add("unhealthy");
       botLabel.textContent = "Bot apagado";
+    } else {
+      botProcessLed.classList.add("healthy");
+      botLabel.textContent = "Bot encendido";
     }
     botDetail.textContent = "";
-    startBotButton.disabled = false;
-    startBotButton.textContent = body.running ? "Detener bot" : "Iniciar bot";
+    generateQrAction.classList.toggle("hidden", body.running || body.whatsappState === "linked");
     whatsappLink.classList.toggle("hidden", body.state !== "qr");
     qrView.classList.toggle("hidden", body.state !== "qr");
     qrCode.textContent = body.qrDisplay || "";
     setEditingLocked(body.running);
+    refreshStartButton();
     if (body.whatsappState === "linked") {
       setHealthIndicator(whatsappLed, true, "Sesión conectada", "Sesión no conectada");
     } else if (body.whatsappState === "qr" || body.whatsappState === "connecting") {
@@ -152,6 +181,7 @@ async function updateBotStatus() {
     }
   } catch {
     setHealthIndicator(botProcessLed, false, "Proceso iniciado", "No se pudo comprobar");
+    startBotButton.disabled = true;
   }
 }
 
@@ -166,6 +196,8 @@ async function updateHealth() {
     const response = await fetch("/api/health", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
+    openAiReady = body.openai;
+    refreshStartButton();
     setHealthIndicator(whatsappLed, body.whatsapp, "Sesión conectada", "Sesión no conectada");
     setHealthIndicator(openAiLed, body.openai, "Clave aceptada y modelo accesible", "Revisa la clave o el modelo");
   } catch {
@@ -176,7 +208,7 @@ async function updateHealth() {
 
 startBotButton.addEventListener("click", async () => {
   startBotButton.disabled = true;
-  const action = botRunning ? "stop" : "start";
+  const action = botRunning && !configurationOnly ? "stop" : "start";
   startBotButton.textContent = action === "stop" ? "Deteniendo…" : "Iniciando…";
   showMessage(action === "stop" ? "Deteniendo el bot…" : "Iniciando el bot…");
   try {
@@ -191,7 +223,7 @@ startBotButton.addEventListener("click", async () => {
   } catch (error) {
     showMessage(error.message, true);
     startBotButton.disabled = false;
-    startBotButton.textContent = "Iniciar bot";
+    startBotButton.textContent = "🤖 Iniciar bot";
   }
 });
 
@@ -231,17 +263,71 @@ document.querySelector("#toggle-key").addEventListener("click", (event) => {
   event.currentTarget.textContent = input.type === "password" ? "Mostrar" : "Ocultar";
 });
 
+function readFormValues() {
+  const values = Object.fromEntries(new FormData(form));
+  values.HUMAN_SUPPORT_NUMBERS = [values.HUMAN_SUPPORT_NUMBERS, ...values.ADDITIONAL_SUPPORT_NUMBERS.split("\n")].filter(Boolean);
+  values.IGNORE_NUMBERS = values.IGNORE_NUMBERS.split("\n");
+  return values;
+}
+
+async function saveConfiguration() {
+  const response = await fetch("/api/config", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+    body: JSON.stringify(readFormValues()),
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error);
+  configuration = body.config;
+  await updateHealth();
+  return body;
+}
+
+generateQrButton.addEventListener("click", async () => {
+  generateQrButton.disabled = true;
+  showMessage("Guardando configuración e iniciando WhatsApp…");
+  try {
+    await saveConfiguration();
+    const response = await fetch("/api/whatsapp/setup", {
+      method: "POST",
+      headers: { "X-CSRF-Token": csrfToken },
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    showMessage(body.message);
+    setTimeout(updateBotStatus, 1000);
+  } catch (error) {
+    showMessage(error.message, true);
+  } finally {
+    generateQrButton.disabled = false;
+  }
+});
+
+cancelQrButton.addEventListener("click", async () => {
+  cancelQrButton.disabled = true;
+  showMessage("Cancelando la vinculación de WhatsApp…");
+  try {
+    const response = await fetch("/api/bot/stop", {
+      method: "POST",
+      headers: { "X-CSRF-Token": csrfToken },
+    });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.error);
+    showMessage("Vinculación cancelada.");
+    await updateBotStatus();
+  } catch (error) {
+    showMessage(error.message, true);
+  } finally {
+    cancelQrButton.disabled = false;
+  }
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   saveButton.disabled = true;
   showMessage("Guardando…");
-  const values = Object.fromEntries(new FormData(form));
-  values.HUMAN_SUPPORT_NUMBERS = values.HUMAN_SUPPORT_NUMBERS.split("\n");
-  values.IGNORE_NUMBERS = values.IGNORE_NUMBERS.split("\n");
   try {
-    const response = await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken }, body: JSON.stringify(values) });
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error);
+    const body = await saveConfiguration();
     form.elements.OPENAI_API_KEY.value = "";
     fill(body.config);
     setupWelcome.classList.add("hidden");

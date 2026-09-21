@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { ENV_PATH } from "../config.js";
 import { readAdminConfig, saveAdminConfig } from "./configStore.js";
 import { createAdminBackup, readAdminTools, restoreAdminBackup } from "./adminTools.js";
-import { botIsRunning, currentBotStatus, resetWhatsAppSession, startBotProcess, stopBotProcess } from "./botProcessManager.js";
+import { activateBotProcess, botIsRunning, currentBotStatus, resetWhatsAppSession, startBotProcess, startWhatsAppSetupProcess, stopBotProcess } from "./botProcessManager.js";
 import { deleteFaq, FAQ_TEMPLATES, listFaqs, saveFaq } from "./faqStore.js";
 import { createOpenAiHealthChecker } from "./openAiHealth.js";
 
@@ -113,12 +113,20 @@ const server = http.createServer(async (request, response) => {
     }
     if (request.method === "POST" && request.url === "/api/bot/start") {
       if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
-      const started = startBotProcess();
+      const started = await activateBotProcess();
       return json(response, started ? 202 : 200, { started, message: started ? "El bot se está iniciando." : "El bot ya está activo." });
+    }
+    if (request.method === "POST" && request.url === "/api/whatsapp/setup") {
+      if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
+      const started = startWhatsAppSetupProcess();
+      return json(response, started ? 202 : 200, {
+        started,
+        message: started ? "WhatsApp se está preparando para mostrar el QR." : "La configuración de WhatsApp ya está activa.",
+      });
     }
     if (request.method === "POST" && request.url === "/api/whatsapp/reset") {
       if (!authorized(request)) return json(response, 403, { error: "Solicitud rechazada" });
-      await resetWhatsAppSession();
+      await resetWhatsAppSession({ start: () => startBotProcess({ configurationOnly: true }) });
       return json(response, 202, { reset: true, message: "Sesión de WhatsApp eliminada. Esperando un QR nuevo." });
     }
     if (request.method === "PUT" && request.url === "/api/config") {
@@ -136,7 +144,8 @@ const server = http.createServer(async (request, response) => {
     }
     return json(response, 404, { error: "No encontrado" });
   } catch (error) {
-    return json(response, 400, { error: error instanceof SyntaxError ? "El contenido enviado no es JSON válido" : error.message });
+    const status = Number.isInteger(error.statusCode) ? error.statusCode : 400;
+    return json(response, status, { error: error instanceof SyntaxError ? "El contenido enviado no es JSON válido" : error.message });
   }
 });
 

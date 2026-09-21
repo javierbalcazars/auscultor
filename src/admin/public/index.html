@@ -8,17 +8,21 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">Iniciar bot</button></div></header>
+  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">🤖 Iniciar bot</button></div></header>
   <main>
     <section id="setup-welcome" class="setup-welcome hidden"><strong>Bienvenido a Auscultor</strong><p>Completa la configuración, revisa la información del negocio y vincula WhatsApp. El panel te guiará durante el primer inicio.</p></section>
     <section class="hero"><div><p class="eyebrow">CONFIGURACIÓN DEL ASISTENTE</p><h1>Panel de Control</h1><p>Configura el asistente, la información del negocio y sus conexiones desde un solo lugar.</p></div><div class="control-stack"><div id="health-panel" class="health-panel" aria-live="polite"><div><span id="bot-process-led" class="health-led checking"></span><p><b>Bot</b><small>Comprobando proceso…</small></p></div><div><span id="whatsapp-led" class="health-led checking"></span><p><b>WhatsApp</b><small>Comprobando sesión…</small></p></div><div><span id="openai-led" class="health-led checking"></span><p><b>OpenAI API</b><small>Comprobando clave…</small></p></div></div></div></section>
-    <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre></div></section>
+    <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre><button id="cancel-qr" class="danger-button" type="button">Cancelar vinculación</button></div></section>
     <form id="config-form">
-      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="general" class="active">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Información del negocio</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="avanzado">Avanzado</button></nav>
-      <section id="general" class="panel active"><div class="section-title"><h2>General</h2><p>Identidad, datos y conexión con OpenAI.</p></div><div class="grid">
+      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="configuracion" class="active">Configuración</button><button type="button" data-target="general">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Información del negocio</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="avanzado">Avanzado</button></nav>
+      <section id="configuracion" class="panel active"><div class="section-title"><h2>Configuración</h2><p>Completa los datos principales y vincula WhatsApp sin iniciar el bot manualmente.</p></div><div class="grid">
+        <label><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="Opcional para generar el QR"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Puedes configurarla ahora o después de vincular WhatsApp.</small></label>
+        <label><span>Número del encargado principal</span><input name="HUMAN_SUPPORT_NUMBERS" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+56 9 1234 5678"><small>Incluye el código de país. Puedes agregar más encargados en la pestaña Personas.</small></label>
+        <div id="generate-qr-action" class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Guarda la configuración, inicia WhatsApp y muestra el QR.</p></div><button id="generate-qr" class="primary" type="button">Generar QR</button></div>
+      </div></section>
+      <section id="general" class="panel"><div class="section-title"><h2>General</h2><p>Identidad, datos y conexión con OpenAI.</p></div><div class="grid">
         <label><span>Nombre del negocio</span><input name="BUSINESS_NAME" maxlength="100" required><small>Se utiliza en mensajes y registros.</small></label>
         <label><span>Ruta de datos</span><input name="VAULT_PATH" required><small>Carpeta que contiene FAQs y Chats.</small></label>
-        <label class="wide"><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="••••••••••••••••"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Déjala vacía para conservar la clave guardada.</small></label>
         <label><span>Modelo de OpenAI</span>
           <select id="model-select">
             <option value="gpt-4o-mini">GPT-4o mini (muy rápido)</option>
@@ -38,7 +42,7 @@
         <input name="CONVERSATIONS_FOLDER" type="hidden" value="Chats">
       </div></section>
       <section id="personas" class="panel"><div class="section-title"><h2>Personas y números</h2><p>Un número por línea, con signo + y código del país.</p></div><div class="grid">
-        <label><span>Asistentes humanos</span><textarea name="HUMAN_SUPPORT_NUMBERS" rows="8" required placeholder="+56 9 1234 5678"></textarea><small>Las alertas y audios se enviarán a estos números. Se guardan internamente solo con dígitos para WhatsApp.</small></label>
+        <label><span>Encargados adicionales</span><textarea id="additional-support-numbers" name="ADDITIONAL_SUPPORT_NUMBERS" rows="8" placeholder="+56 9 1234 5678"></textarea><small>Se suman al encargado principal y recibirán las derivaciones y alertas.</small></label>
         <label><span>Números ignorados o bloqueados</span><textarea name="IGNORE_NUMBERS" rows="8" placeholder="+56 9 1234 5678"></textarea><small>El bot no responderá mensajes de estos números.</small></label>
       </div></section>
       <section id="tiempos" class="panel"><div class="section-title"><h2>Tiempos y límites</h2><p>Ajusta el ritmo de respuesta y la intervención humana.</p></div><div class="grid numeric">

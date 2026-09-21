@@ -104,8 +104,8 @@ export function validateAdminConfig(input, existing = {}) {
   }
   const newKey = String(input.OPENAI_API_KEY ?? "").trim();
   output.OPENAI_API_KEY = newKey || existing.OPENAI_API_KEY || "";
-  if (!output.OPENAI_API_KEY || output.OPENAI_API_KEY === "sk-xxxxxxxx" || /[\r\n\0]/.test(output.OPENAI_API_KEY)) {
-    throw new Error("Debes configurar una API key de OpenAI válida");
+  if (output.OPENAI_API_KEY === "sk-xxxxxxxx" || /[\r\n\0]/.test(output.OPENAI_API_KEY)) {
+    throw new Error("La API key de OpenAI no es válida");
   }
   output.HUMAN_SUPPORT_NUMBERS = phoneList(input.HUMAN_SUPPORT_NUMBERS, true).join(",");
   output.IGNORE_NUMBERS = phoneList(input.IGNORE_NUMBERS).join(",");

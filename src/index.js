@@ -6,7 +6,7 @@ import {
   INSTANCE_LOCK_PATH,
   METRICS_PATH,
   VAULT_PATH,
-  loadRuntimeConfig,
+  loadBotRuntimeConfig,
 } from "./config.js";
 import makeWASocket, { useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
 import qrcode from "qrcode-terminal";
@@ -53,7 +53,12 @@ const signalDiagnostics = installSignalLogFilter();
 const whatsappLogger = pino({ level: "silent" });
 const BOT_STARTED_AT_MS = Date.now();
 
+function writeRuntimeStatus(state, details = {}, options) {
+  writeBotStatus(state, { configurationOnly: CONFIGURATION_ONLY, ...details }, options);
+}
+
 const {
+  configurationOnly: CONFIGURATION_ONLY,
   businessName: BUSINESS_NAME,
   ignoreNumbers: IGNORE_NUMBERS,
   conversationsFolder: CONVERSATIONS_FOLDER,
@@ -69,7 +74,7 @@ const {
   humanSupportJids: HUMAN_SUPPORT_JIDS,
   humanAlertCooldownMs: HUMAN_ALERT_COOLDOWN_MS,
   humanTakeoverMs: HUMAN_TAKEOVER_MS,
-} = loadRuntimeConfig();
+} = loadBotRuntimeConfig();
 
 const HUMAN_HANDOFF_MESSAGE =
   `Gracias por tu consulta. No cuento con la información necesaria para responderte correctamente en este momento. Derivaré tu mensaje a uno de los encargados de ${BUSINESS_NAME} para que pueda ayudarte. Te responderemos a la brevedad.`;
@@ -113,7 +118,7 @@ function recordDuration(name, durationMs) {
 const runtime = createRuntimeController({
   connect: () => startBot(),
   getLoggedOut: () => whatsappLoggedOut,
-  writeStatus: writeBotStatus,
+  writeStatus: writeRuntimeStatus,
   onReconnectScheduled: (delayMs) => {
     recordMetric("whatsapp_reconnections");
     console.log(`🔄 Nuevo intento de conexión en ${delayMs / 1000} segundo(s)...`);
@@ -558,7 +563,11 @@ async function startBot() {
     runtime.markConnected();
     recordMetric("whatsapp_connections");
     console.log("✅ Asistente de WhatsApp conectado.");
-    writeBotStatus("connected");
+    writeRuntimeStatus("connected");
+    if (CONFIGURATION_ONLY) {
+      deferredMessageEvents.length = 0;
+      return;
+    }
     await humanAlertRetryQueue.flush();
 
     for (const event of deferredMessageEvents.splice(0)) {
@@ -591,12 +600,12 @@ async function startBot() {
       console.log("Escanea este código QR con WhatsApp (Dispositivos vinculados):");
       qrcode.generate(qr, { small: true }, (qrDisplay) => {
         console.log(qrDisplay);
-        writeBotStatus("qr", { qrDisplay });
+        writeRuntimeStatus("qr", { qrDisplay });
       });
     }
 
     if (connection === "close") {
-      writeBotStatus("reconnecting");
+      writeRuntimeStatus("reconnecting");
       if (startupValidationTimer) {
         clearTimeout(startupValidationTimer);
         startupValidationTimer = null;
@@ -775,6 +784,7 @@ async function startBot() {
   };
 
   sock.ev.on("messages.upsert", (event) => {
+    if (CONFIGURATION_ONLY) return;
     if (!socketReady) {
       if (event.type === "notify") {
         const currentMessages = event.messages.filter((message) =>
@@ -797,8 +807,8 @@ try {
   // Baileys puede dejar temporalmente su WebSocket sin handles referenciados.
   // Este temporizador mantiene vivo el servicio hasta una señal o un error fatal.
   runtime.startKeepAlive();
-  writeBotStatus("starting");
-  const restoredAlerts = humanAlertRetryQueue.restore();
+  writeRuntimeStatus("starting");
+  const restoredAlerts = CONFIGURATION_ONLY ? 0 : humanAlertRetryQueue.restore();
   if (restoredAlerts > 0) {
     console.log(`📬 Se recuperaron ${restoredAlerts} aviso(s) pendiente(s); se enviarán al conectar.`);
   }

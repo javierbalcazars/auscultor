@@ -70,11 +70,22 @@ export function botIsRunning({ lockPath = INSTANCE_LOCK_PATH } = {}) {
 export function currentBotStatus() {
   const status = readBotStatus();
   const linked = whatsappSessionIsLinked(AUTH_SESSION_PATH, { status });
+  const configurationOnly = status?.configurationOnly === true;
   const lock = runningBotLock();
-  if (!lock) return { running: false, state: "stopped", whatsappState: linked ? "linked" : "unlinked" };
+  if (!lock) return {
+    running: false,
+    state: "stopped",
+    whatsappState: linked ? "linked" : "unlinked",
+    ...(configurationOnly ? { configurationOnly: true } : {}),
+  };
   const { processId } = lock;
   if (!status || status.processId !== processId) {
-    return { running: true, state: "starting", whatsappState: linked ? "linked" : "connecting" };
+    return {
+      running: true,
+      state: "starting",
+      whatsappState: linked ? "linked" : "connecting",
+      ...(configurationOnly ? { configurationOnly: true } : {}),
+    };
   }
   const state = ["starting", "qr", "connected", "reconnecting"].includes(status.state)
     ? status.state
@@ -83,6 +94,7 @@ export function currentBotStatus() {
     running: true,
     state,
     whatsappState: state === "qr" ? "qr" : (linked || state === "connected" ? "linked" : "connecting"),
+    ...(configurationOnly ? { configurationOnly: true } : {}),
     ...(status.state === "qr" && typeof status.qrDisplay === "string"
       ? { qrDisplay: status.qrDisplay }
       : {}),
@@ -97,7 +109,7 @@ export function stopBotProcess({ lockPath = INSTANCE_LOCK_PATH } = {}) {
   return true;
 }
 
-export function startBotProcess() {
+export function startBotProcess({ configurationOnly = false } = {}) {
   if (botIsRunning()) return false;
   const localDirectory = path.join(DATA_ROOT, ".local");
   const logPath = path.join(localDirectory, "bot.log");
@@ -106,11 +118,14 @@ export function startBotProcess() {
   fs.closeSync(fs.openSync(logPath, "a", 0o600));
   fs.chmodSync(logPath, 0o600);
 
-  const childEnvironment = process.versions.electron
-    ? { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
-    : process.env;
+  const childEnvironment = {
+    ...process.env,
+    ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
+    AUSCULTOR_CONFIGURATION_ONLY: configurationOnly ? "1" : "0",
+  };
   const result = process.versions.electron ? { status: null, stderr: "" } : spawnSync("systemd-run", [
     "--user", "--collect", `--unit=auscultor-${Date.now()}`,
+    `--setenv=AUSCULTOR_CONFIGURATION_ONLY=${configurationOnly ? "1" : "0"}`,
     `--property=WorkingDirectory=${DATA_ROOT}`,
     `--property=StandardOutput=append:${logPath}`,
     `--property=StandardError=append:${logPath}`,
@@ -134,6 +149,35 @@ export function startBotProcess() {
     fs.closeSync(logDescriptor);
   }
   return true;
+}
+
+export function startWhatsAppSetupProcess({
+  isRunning = botIsRunning,
+  status = currentBotStatus,
+  start = startBotProcess,
+} = {}) {
+  if (!isRunning()) return start({ configurationOnly: true });
+  if (status().configurationOnly) return false;
+  const error = new Error("Detén el bot antes de iniciar la vinculación de WhatsApp.");
+  error.statusCode = 409;
+  throw error;
+}
+
+export async function activateBotProcess({
+  isRunning = botIsRunning,
+  status = currentBotStatus,
+  stop = stopBotProcess,
+  start = startBotProcess,
+  waitFor = wait,
+  maxAttempts = 50,
+  waitMs = 100,
+} = {}) {
+  if (!isRunning()) return start();
+  if (!status().configurationOnly) return false;
+  stop();
+  for (let attempt = 0; attempt < maxAttempts && isRunning(); attempt += 1) await waitFor(waitMs);
+  if (isRunning()) throw new Error("El modo de configuración no se detuvo a tiempo. Inténtalo nuevamente.");
+  return start();
 }
 
 export async function resetWhatsAppSession({

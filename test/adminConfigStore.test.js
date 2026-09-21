@@ -33,6 +33,16 @@ test("conserva una API key existente cuando el formulario queda vacío", () => {
   assert.equal(result.OPENAI_API_KEY, "sk-existente");
 });
 
+test("permite guardar la configuración sin API key para vincular WhatsApp", (t) => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "admin-config-no-key-"));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const envPath = path.join(directory, ".env");
+  const result = validateAdminConfig({ ...validInput(), OPENAI_API_KEY: "" });
+  assert.equal(result.OPENAI_API_KEY, "");
+  saveAdminConfig({ ...validInput(), OPENAI_API_KEY: "" }, envPath);
+  assert.equal(readAdminConfig(envPath).hasOpenAiApiKey, false);
+});
+
 test("guarda con permisos privados y nunca devuelve la API key", (t) => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "admin-config-"));
   t.after(() => fs.rmSync(directory, { recursive: true, force: true }));

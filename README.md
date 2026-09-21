@@ -34,17 +34,17 @@ a Internet. Puede ser un equipo dedicado o un computador de uso cotidiano.
 Auscultor se distribuye como una única aplicación de escritorio para Linux x86_64. La AppImage incluye Electron, Chromium, Node.js, Baileys y las demás dependencias: el usuario no necesita instalar Node, npm, Python, Git ni compiladores.
 
 1. Abre **Releases** en GitHub.
-2. Descarga `Auscultor-Desktop-1.7.1-x86_64.AppImage`.
+2. Descarga `Auscultor-Desktop-1.8.0-x86_64.AppImage`.
 3. Dale permiso de ejecución:
 
 ```bash
-chmod +x Auscultor-Desktop-1.7.1-x86_64.AppImage
+chmod +x Auscultor-Desktop-1.8.0-x86_64.AppImage
 ```
 
 4. Ábrela con doble clic o ejecuta:
 
 ```bash
-./Auscultor-Desktop-1.7.1-x86_64.AppImage
+./Auscultor-Desktop-1.8.0-x86_64.AppImage
 ```
 
 Auscultor abre una ventana propia, elige automáticamente un puerto local libre y permanece en la bandeja cuando se cierra la ventana. Desde el icono de la bandeja puedes volver a mostrarla o elegir **Salir**, lo que detiene el bot de forma segura.

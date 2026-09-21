@@ -40,6 +40,11 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.equal(typeof configBody.csrfToken, "string");
 
   const page = await fetch(`${baseUrl}/`).then((response) => response.text());
+  assert.match(page, /data-target="configuracion"/);
+  assert.match(page, /id="generate-qr"/);
+  assert.match(page, /id="cancel-qr"/);
+  assert.match(page, /<input name="HUMAN_SUPPORT_NUMBERS" type="tel"/);
+  assert.doesNotMatch(page, /<textarea name="HUMAN_SUPPORT_NUMBERS"/);
   assert.match(page, /Desvincular y generar QR nuevo/);
   assert.match(page, /Información del negocio/);
   assert.match(page, /Respaldo cifrado/);
@@ -52,6 +57,7 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   const browserCode = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
   assert.match(browserCode, /Bot encendido/);
   assert.match(browserCode, /Bot apagado/);
+  assert.doesNotMatch(browserCode, /Bot conectado/);
   assert.match(browserCode, /Esperando escaneo de QR/);
 
   const faqsResponse = await fetch(`${baseUrl}/api/faqs`);
@@ -78,6 +84,10 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   const rejectedReset = await fetch(`${baseUrl}/api/whatsapp/reset`, { method: "POST" });
   assert.equal(rejectedReset.status, 403);
   assert.deepEqual(await rejectedReset.json(), { error: "Solicitud rechazada" });
+
+  const rejectedSetup = await fetch(`${baseUrl}/api/whatsapp/setup`, { method: "POST" });
+  assert.equal(rejectedSetup.status, 403);
+  assert.deepEqual(await rejectedSetup.json(), { error: "Solicitud rechazada" });
 
   const missing = await fetch(`${baseUrl}/ruta-inexistente`);
   assert.equal(missing.status, 404);

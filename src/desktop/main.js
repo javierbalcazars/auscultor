@@ -95,12 +95,16 @@ function createWindow(url) {
 function createTray() {
   tray = new Tray(path.join(app.getAppPath(), "assets", "auscultor.png"));
   tray.setToolTip("Auscultor");
+  const showMainWindow = () => {
+    mainWindow?.show();
+    mainWindow?.focus();
+  };
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: "Mostrar Auscultor", click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+    { label: "Mostrar Auscultor", click: showMainWindow },
     { type: "separator" },
     { label: "Salir", click: () => { quitting = true; app.quit(); } },
   ]));
-  tray.on("double-click", () => { mainWindow?.show(); mainWindow?.focus(); });
+  tray.on("click", showMainWindow);
 }
 
 app.on("second-instance", () => {
