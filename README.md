@@ -3,7 +3,7 @@
 # Auscultor
 
 **Asistente inteligente para alojamientos y turismo.**
-Versión actual: **1.7.0**.
+Versión actual: **1.8.0**.
 
 Auscultor atiende consultas por WhatsApp para alojamientos, campings, hostales,
 cabañas, parques y otros negocios turísticos. Responde usando exclusivamente la
