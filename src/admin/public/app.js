@@ -26,6 +26,7 @@ const createBackupButton = document.querySelector("#create-backup");
 const toolsMessage = document.querySelector("#tools-message");
 const restoreBackupButton = document.querySelector("#restore-backup");
 const backupSelect = document.querySelector("#backup-select");
+const supportNumberInput = form.elements.namedItem("HUMAN_SUPPORT_NUMBERS");
 let faqDocuments = [];
 let faqTemplates = [];
 let selectedFaq = null;
@@ -92,6 +93,18 @@ function hasSupportNumber() {
   const numbers = configuration.HUMAN_SUPPORT_NUMBERS;
   return (Array.isArray(numbers) ? numbers : String(numbers || "").split(/[\n,]/)).some((number) => String(number).replace(/\D/g, "").length >= 8);
 }
+
+function markSupportNumberRequired() {
+  supportNumberInput.classList.add("field-error");
+  openPanel(supportNumberInput.closest(".panel"));
+  supportNumberInput.focus();
+}
+
+supportNumberInput.addEventListener("input", () => {
+  if (supportNumberInput.value.replace(/\D/g, "").length >= 8) {
+    supportNumberInput.classList.remove("field-error");
+  }
+});
 
 function refreshStartButton() {
   const requirementsReady = configuration.hasOpenAiApiKey && openAiReady && hasSupportNumber() && whatsappState === "linked";
@@ -297,6 +310,7 @@ generateQrButton.addEventListener("click", async () => {
     showMessage(body.message);
     setTimeout(updateBotStatus, 1000);
   } catch (error) {
+    if (error.message === "Debes configurar al menos un Encargado.") markSupportNumberRequired();
     showMessage(error.message, true);
   } finally {
     generateQrButton.disabled = false;
@@ -351,11 +365,11 @@ function showFaqMessage(text, error = false) {
 }
 
 function selectFaq(name) {
-  const document = faqDocuments.find((item) => item.name === name);
-  selectedFaq = document?.name || null;
-  faqName.value = document?.name || "";
-  faqContent.value = document?.content || "";
-  document.querySelector("#delete-faq").disabled = !document;
+  const faqDocument = faqDocuments.find((item) => item.name === name);
+  selectedFaq = faqDocument?.name || null;
+  faqName.value = faqDocument?.name || "";
+  faqContent.value = faqDocument?.content || "";
+  document.querySelector("#delete-faq").disabled = !faqDocument;
   faqList.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.name === selectedFaq));
   showFaqMessage("");
 }
@@ -392,8 +406,8 @@ async function loadFaqs() {
     });
     faqTemplate.replaceChildren(placeholder, ...options);
     renderFaqs();
-  } catch (error) {
-    showFaqMessage(error.message, true);
+  } catch {
+    showFaqMessage("No se pudo cargar la información del negocio. Intenta nuevamente.", true);
   }
 }
 

@@ -28,6 +28,13 @@ test("valida y normaliza la configuración administrable", () => {
   assert.equal(result.RESPONSE_DELAY_MS, "4000");
 });
 
+test("explica claramente cuando falta el encargado principal", () => {
+  assert.throws(
+    () => validateAdminConfig({ ...validInput(), HUMAN_SUPPORT_NUMBERS: [] }),
+    { message: "Debes configurar al menos un Encargado." }
+  );
+});
+
 test("conserva una API key existente cuando el formulario queda vacío", () => {
   const result = validateAdminConfig({ ...validInput(), OPENAI_API_KEY: "" }, { OPENAI_API_KEY: "sk-existente" });
   assert.equal(result.OPENAI_API_KEY, "sk-existente");

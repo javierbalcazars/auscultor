@@ -59,6 +59,8 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.match(browserCode, /Bot apagado/);
   assert.doesNotMatch(browserCode, /Bot conectado/);
   assert.match(browserCode, /Esperando escaneo de QR/);
+  assert.match(browserCode, /No se pudo cargar la información del negocio\. Intenta nuevamente\./);
+  assert.doesNotMatch(browserCode, /const document = faqDocuments/);
 
   const faqsResponse = await fetch(`${baseUrl}/api/faqs`);
   const faqsBody = await faqsResponse.json();

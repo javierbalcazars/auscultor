@@ -50,7 +50,7 @@ function cleanPhone(value) {
 function phoneList(value, required = false) {
   const items = Array.isArray(value) ? value : String(value ?? "").split(/[\n,]/);
   const cleaned = [...new Set(items.map((item) => String(item).trim()).filter(Boolean).map(cleanPhone))];
-  if (required && cleaned.length === 0) throw new Error("Debes configurar al menos un asistente humano");
+  if (required && cleaned.length === 0) throw new Error("Debes configurar al menos un Encargado.");
   return cleaned;
 }
 

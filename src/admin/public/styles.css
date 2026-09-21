@@ -156,6 +156,9 @@ resize:vertical}
 input:focus,textarea:focus{
   border-color:var(--green);
 box-shadow:0 0 0 3px #35d07f1d}
+input.field-error,input.field-error:focus{
+  border-color:var(--danger);
+box-shadow:0 0 0 3px #ff777726}
 .secret,.unit{
 display:flex}
 .secret input,.unit input{
