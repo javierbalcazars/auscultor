@@ -362,6 +362,7 @@ box-shadow:0 0 12px #ff4d5f}
   display:flex;
   align-items:center;
 gap:10px}
+.top-actions select{width:auto;min-width:104px;border-color:#30463f;background:#101b18;padding:8px 30px 8px 10px}
 .top-actions button{
   border:1px solid #2f6b50;
   background:#153c2b;
@@ -425,3 +426,5 @@ cursor:wait}
 @media(max-width:700px){.tools-grid{grid-template-columns:1fr}}
 .backup-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.backup-actions>button{border:1px solid #2f6b50;background:#153c2b;color:#78e8aa;border-radius:9px;padding:10px 14px;font-weight:750;cursor:pointer}.backup-actions .danger-button{border-color:#9f4a53;background:#742f38;color:#fff}.backup-actions select{width:auto;min-width:260px;flex:1}
 .logo{overflow:hidden;background:none}.logo img{display:block;width:100%;height:100%}
+
+.info-card{display:flex;align-items:center;justify-content:space-between;gap:32px;max-width:760px;border:1px solid var(--line);background:#0c1613;border-radius:16px;padding:28px}.info-details{flex:1}.info-details h3{margin:0 0 18px;font-size:24px}.info-details p{margin:9px 0;color:var(--text)}.info-details b{color:var(--muted);font-weight:600}.info-details a{color:var(--green);text-decoration:none}.info-details a:hover{text-decoration:underline}.info-details .open-source{margin-top:20px;color:var(--muted);font-size:14px}.github-avatar{width:160px;height:160px;flex:0 0 160px;border:2px solid #355047;border-radius:50%;object-fit:cover;background:#17211e}@media(max-width:560px){.info-card{align-items:center;flex-direction:column-reverse}.info-details{width:100%;text-align:center}}

@@ -8,15 +8,15 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><span class="local">● Solo este equipo</span><button id="start-bot" type="button">🤖 Iniciar bot</button></div></header>
+  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><select id="language-select" aria-label="Idioma"><option value="es">Español</option><option value="en">English</option></select><span class="local">● Solo este equipo</span><button id="start-bot" type="button">🤖 Iniciar bot</button></div></header>
   <main>
     <section id="setup-welcome" class="setup-welcome hidden"><strong>Bienvenido a Auscultor</strong><p>Completa la configuración, revisa la información del negocio y vincula WhatsApp. El panel te guiará durante el primer inicio.</p></section>
     <section class="hero"><div><p class="eyebrow">CONFIGURACIÓN DEL ASISTENTE</p><h1>Panel de Control</h1><p>Configura el asistente, la información del negocio y sus conexiones desde un solo lugar.</p></div><div class="control-stack"><div id="health-panel" class="health-panel" aria-live="polite"><div><span id="bot-process-led" class="health-led checking"></span><p><b>Bot</b><small>Comprobando proceso…</small></p></div><div><span id="whatsapp-led" class="health-led checking"></span><p><b>WhatsApp</b><small>Comprobando sesión…</small></p></div><div><span id="openai-led" class="health-led checking"></span><p><b>OpenAI API</b><small>Comprobando clave…</small></p></div></div></div></section>
     <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre><button id="cancel-qr" class="danger-button" type="button">Cancelar vinculación</button></div></section>
     <form id="config-form">
-      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="configuracion" class="active">Configuración</button><button type="button" data-target="general">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Información del negocio</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="avanzado">Avanzado</button></nav>
+      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="configuracion" class="active">Configuración</button><button type="button" data-target="general">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Información del negocio</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="avanzado">Avanzado</button><button type="button" data-target="info">Info</button></nav>
       <section id="configuracion" class="panel active"><div class="section-title"><h2>Configuración</h2><p>Completa los datos principales y vincula WhatsApp sin iniciar el bot manualmente.</p></div><div class="grid">
-        <label><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="Opcional para generar el QR"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Puedes configurarla ahora o después de vincular WhatsApp.</small></label>
+        <label><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="Pega aquí tu API key"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Pega la clave privada de tu cuenta de OpenAI.</small></label>
         <label><span>Número del encargado principal</span><input name="HUMAN_SUPPORT_NUMBERS" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+56 9 1234 5678"><small>Incluye el código de país. Puedes agregar más encargados en la pestaña Personas.</small></label>
         <div id="generate-qr-action" class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Guarda la configuración, inicia WhatsApp y muestra el QR.</p></div><button id="generate-qr" class="primary" type="button">Generar QR</button></div>
       </div></section>
@@ -63,20 +63,35 @@
 Escribe aquí información confirmada del negocio."></textarea></label><div class="faq-editor-actions"><small id="faq-message" role="status"></small><button id="delete-faq" class="danger-button" type="button" data-live-edit>Eliminar</button><button id="save-faq" class="primary" type="button" data-live-edit>Guardar FAQ</button></div></div>
         </div>
       </section>
-      <section id="herramientas" class="panel"><div class="section-title"><h2>Herramientas</h2><p>Diagnóstico, métricas y respaldo sin utilizar la terminal.</p></div>
+      <section id="herramientas" class="panel"><div class="section-title"><h2>Herramientas</h2><p>Diagnóstico y métricas sin utilizar la terminal.</p></div>
         <div class="tools-grid"><div class="tool-card"><div><h3>Diagnóstico local</h3><p>Comprueba configuración, Vault, FAQs y sesión.</p></div><button id="refresh-tools" type="button">Actualizar</button><div id="diagnostic-results" class="tool-results"></div></div>
         <div class="tool-card"><div><h3>Métricas</h3><p>Contadores técnicos sin números ni contenido de conversaciones.</p></div><div id="metrics-results" class="tool-results"></div></div>
-        <div class="tool-card wide"><div><h3>Respaldo cifrado</h3><p>Guarda configuración, sesión, Vault y datos en <code>.local/encrypted-backups</code>. Detén el bot antes de crearlo.</p></div><label><span>Contraseña del respaldo</span><input id="backup-passphrase" type="password" data-live-edit minlength="12" autocomplete="new-password" placeholder="Mínimo 12 caracteres"></label><div class="backup-actions"><button id="create-backup" type="button" data-live-edit>Crear respaldo cifrado</button><select id="backup-select" data-live-edit><option value="">Respaldos disponibles…</option></select><button id="restore-backup" class="danger-button" type="button" data-live-edit>Restaurar seleccionado</button></div><small id="tools-message" role="status"></small></div></div>
+</div>
       </section>
-      <section id="avanzado" class="panel"><div class="section-title"><h2>Opciones avanzadas</h2><p>Límites técnicos para contexto, salida y diagnóstico.</p></div><div class="grid numeric">
+      <section id="avanzado" class="panel"><div class="section-title"><h2>Opciones avanzadas</h2><p>Límites técnicos, respaldos y administración de la sesión.</p></div><div class="grid numeric">
         <label><span>Historial enviado</span><input name="MAX_HISTORY_MESSAGES" type="number" min="1" required></label><label><span>Historial almacenado</span><input name="MAX_STORED_MESSAGES" type="number" min="1" required></label>
         <label><span>Máximo de caracteres</span><input name="MAX_INPUT_CHARS" type="number" min="500" required></label><label><span>Tokens de salida</span><input name="OPENAI_MAX_OUTPUT_TOKENS" type="number" min="128" max="2048" required></label>
         <label><span>Espera máxima de OpenAI (milisegundos)</span><div class="unit"><input name="OPENAI_TIMEOUT_MS" type="number" min="1" max="120000" required><em>ms</em></div><small>30000 ms equivalen a 30 segundos.</small></label><label><span>Validación al iniciar (milisegundos)</span><div class="unit"><input name="SIGNAL_STARTUP_VALIDATION_MS" type="number" min="500" required><em>ms</em></div><small>3000 ms equivalen a 3 segundos.</small></label>
+        <div class="tool-card wide"><div><h3>Respaldo cifrado</h3><p>Guarda configuración, sesión, Vault y datos en <code>.local/encrypted-backups</code>. Detén el bot antes de crearlo.</p></div><label><span>Contraseña del respaldo</span><input id="backup-passphrase" type="password" data-live-edit minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></label><div class="backup-actions"><button id="create-backup" type="button" data-live-edit>Crear respaldo cifrado</button><select id="backup-select" data-live-edit><option value="">Respaldos disponibles…</option></select><button id="restore-backup" class="danger-button" type="button" data-live-edit>Restaurar seleccionado</button></div><small id="tools-message" role="status"></small></div>
         <div class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Desconecta este equipo y elimina su sesión local. El bot se reiniciará y mostrará un QR nuevo.</p></div><button id="reset-whatsapp" class="danger-button" type="button">Desvincular y generar QR nuevo</button></div>
       </div></section>
+      <section id="info" class="panel"><div class="section-title"><h2>Información</h2><p>Datos oficiales de Auscultor y su creador.</p></div>
+        <div class="info-card">
+          <div class="info-details">
+            <h3>Auscultor - <span id="info-version"></span></h3>
+            <p><b>Dev:</b> Javier Balcazar S.</p>
+            <p><b>Edición:</b> <span id="app-edition"></span></p>
+            <p><b>Perfil:</b> <a href="https://github.com/javierbalcazars" target="_blank" rel="noreferrer">Perfil de GitHub</a></p>
+            <p><b>Soporte:</b> <a href="https://github.com/javierbalcazars/auscultor/issues" target="_blank" rel="noreferrer">Reportar un problema</a></p>
+            <p class="open-source">Software de código abierto publicado bajo licencia AGPL-3.0.</p>
+          </div>
+          <img class="github-avatar" src="/api/creator-avatar" width="160" height="160" alt="Avatar de Javier Balcazar">
+        </div>
+      </section>
       <footer id="config-actions" class="actions"><p id="message" role="status"></p><button id="save" class="primary" type="submit">Guardar configuración</button></footer>
     </form>
   </main>
+  <script src="/i18n.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

@@ -1,4 +1,8 @@
 const form = document.querySelector("#config-form");
+const infoVersion = document.querySelector("#info-version");
+const appEdition = document.querySelector("#app-edition");
+const languageSelect = document.querySelector("#language-select");
+const i18n = globalThis.AuscultorI18n;
 const message = document.querySelector("#message");
 const saveButton = document.querySelector("#save");
 const modelSelect = document.querySelector("#model-select");
@@ -69,7 +73,7 @@ function updateModelControl(selected, currentValue = "") {
 }
 
 function showMessage(text, error = false) {
-  message.textContent = text;
+  message.textContent = i18n.t(text);
   message.className = error ? "error" : "success";
 }
 
@@ -84,7 +88,7 @@ function setEditingLocked(locked) {
   createBackupButton.disabled = locked;
   restoreBackupButton.disabled = locked;
   generateQrButton.disabled = locked;
-  if (locked) showMessage("Detén el bot para modificar la configuración.", true);
+  if (locked && !configurationOnly) showMessage("Detén el bot para modificar la configuración.", true);
   else if (message.textContent === "Detén el bot para modificar la configuración.") showMessage("");
   refreshStartButton();
 }
@@ -117,7 +121,7 @@ function openPanel(panel) {
   document.querySelectorAll(".tabs button, .panel").forEach((item) => item.classList.remove("active"));
   panel.classList.add("active");
   document.querySelector(`.tabs button[data-target="${panel.id}"]`)?.classList.add("active");
-  configActions.classList.toggle("hidden", ["faqs", "herramientas"].includes(panel.id));
+  configActions.classList.toggle("hidden", ["faqs", "herramientas", "info"].includes(panel.id));
 }
 
 function fill(config) {
@@ -150,6 +154,8 @@ async function load() {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     csrfToken = body.csrfToken;
+    infoVersion.textContent = `v${body.version}`;
+    appEdition.textContent = body.edition === "stable" ? "Estable" : "Experimental";
     fill(body.config);
     setupWelcome.classList.toggle("hidden", !body.setupRequired);
   } catch (error) {
@@ -241,7 +247,7 @@ startBotButton.addEventListener("click", async () => {
 });
 
 resetWhatsAppButton.addEventListener("click", async () => {
-  const confirmed = confirm("Se cerrará la sesión de WhatsApp en este equipo y tendrás que escanear un QR nuevo. ¿Continuar?");
+  const confirmed = confirm(i18n.t("Se cerrará la sesión de WhatsApp en este equipo y tendrás que escanear un QR nuevo. ¿Continuar?"));
   if (!confirmed) return;
   resetWhatsAppButton.disabled = true;
   showMessage("Desvinculando WhatsApp y preparando un QR nuevo…");
@@ -360,7 +366,7 @@ setInterval(updateBotStatus, 5000);
 
 
 function showFaqMessage(text, error = false) {
-  faqMessage.textContent = text;
+  faqMessage.textContent = i18n.t(text);
   faqMessage.className = error ? "error" : "success";
 }
 
@@ -449,7 +455,7 @@ document.querySelector("#save-faq").addEventListener("click", async () => {
 });
 
 document.querySelector("#delete-faq").addEventListener("click", async () => {
-  if (!selectedFaq || !confirm(`¿Eliminar “${selectedFaq}”? Se conservará un respaldo local.`)) return;
+  if (!selectedFaq || !confirm(i18n.t(`¿Eliminar “${selectedFaq}”? Se conservará un respaldo local.`))) return;
   try {
     const response = await fetch("/api/faqs", {
       method: "DELETE",
@@ -473,9 +479,9 @@ function toolResult(name, ok, detail) {
   const row = document.createElement("div");
   row.className = `tool-result ${ok ? "ok" : "bad"}`;
   const label = document.createElement("b");
-  label.textContent = `${ok ? "OK" : "Revisar"} · ${name}`;
+  label.textContent = `${ok ? "OK" : i18n.t("Revisar")} · ${i18n.t(name)}`;
   const value = document.createElement("span");
-  value.textContent = detail;
+  value.textContent = i18n.t(detail);
   row.append(label, value);
   return row;
 }
@@ -505,7 +511,7 @@ async function loadTools() {
     });
     backupSelect.replaceChildren(backupPlaceholder, ...backupOptions);
   } catch (error) {
-    toolsMessage.textContent = error.message;
+    toolsMessage.textContent = i18n.t(error.message);
     toolsMessage.className = "error";
   }
 }
@@ -513,7 +519,7 @@ async function loadTools() {
 document.querySelector("#refresh-tools").addEventListener("click", loadTools);
 createBackupButton.addEventListener("click", async () => {
   const passphrase = document.querySelector("#backup-passphrase").value;
-  toolsMessage.textContent = "Creando respaldo…";
+  toolsMessage.textContent = i18n.t("Creando respaldo…");
   toolsMessage.className = "";
   try {
     const response = await fetch("/api/tools/backup", {
@@ -524,11 +530,11 @@ createBackupButton.addEventListener("click", async () => {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     document.querySelector("#backup-passphrase").value = "";
-    toolsMessage.textContent = body.message;
+    toolsMessage.textContent = i18n.t(body.message);
     toolsMessage.className = "success";
     await loadTools();
   } catch (error) {
-    toolsMessage.textContent = error.message;
+    toolsMessage.textContent = i18n.t(error.message);
     toolsMessage.className = "error";
   }
 });
@@ -540,12 +546,12 @@ restoreBackupButton.addEventListener("click", async () => {
   const name = backupSelect.value;
   const passphrase = document.querySelector("#backup-passphrase").value;
   if (!name) {
-    toolsMessage.textContent = "Selecciona un respaldo.";
+    toolsMessage.textContent = i18n.t("Selecciona un respaldo.");
     toolsMessage.className = "error";
     return;
   }
-  if (!confirm("La configuración, sesión, Vault y datos actuales serán reemplazados. Se creará un respaldo previo. ¿Continuar?")) return;
-  toolsMessage.textContent = "Verificando y restaurando…";
+  if (!confirm(i18n.t("La configuración, sesión, Vault y datos actuales serán reemplazados. Se creará un respaldo previo. ¿Continuar?"))) return;
+  toolsMessage.textContent = i18n.t("Verificando y restaurando…");
   toolsMessage.className = "";
   try {
     const response = await fetch("/api/tools/restore", {
@@ -556,11 +562,19 @@ restoreBackupButton.addEventListener("click", async () => {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     document.querySelector("#backup-passphrase").value = "";
-    toolsMessage.textContent = body.message;
+    toolsMessage.textContent = i18n.t(body.message);
     toolsMessage.className = "success";
     await Promise.all([load(), loadFaqs(), loadTools()]);
   } catch (error) {
-    toolsMessage.textContent = error.message;
+    toolsMessage.textContent = i18n.t(error.message);
     toolsMessage.className = "error";
   }
+});
+
+languageSelect.addEventListener("change", () => {
+  i18n.setLanguage(languageSelect.value);
+  updateModelControl(modelSelect.value, manualModel.value);
+  updateBotStatus();
+  updateHealth();
+  loadTools();
 });

@@ -14,7 +14,7 @@ if (!command || !target || !["create", "verify", "restore"].includes(command)) {
   process.exit(1);
 }
 if (!passphrase) {
-  console.error("Define BACKUP_PASSPHRASE con una contraseña de al menos 12 caracteres.");
+  console.error("Define BACKUP_PASSPHRASE con una contraseña de al menos 6 caracteres.");
   process.exit(1);
 }
 

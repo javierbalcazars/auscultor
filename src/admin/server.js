@@ -4,7 +4,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ENV_PATH } from "../config.js";
+import { APP_EDITION, APP_VERSION, ENV_PATH } from "../config.js";
+import { createCreatorAvatarCache } from "./creatorAvatar.js";
 import { readAdminConfig, saveAdminConfig } from "./configStore.js";
 import { createAdminBackup, readAdminTools, restoreAdminBackup } from "./adminTools.js";
 import { activateBotProcess, botIsRunning, currentBotStatus, resetWhatsAppSession, startBotProcess, startWhatsAppSetupProcess, stopBotProcess } from "./botProcessManager.js";
@@ -18,10 +19,12 @@ const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "publ
 const assets = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
   ["/app.js", ["app.js", "text/javascript; charset=utf-8"]],
+  ["/i18n.js", ["i18n.js", "text/javascript; charset=utf-8"]],
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
   ["/icon.svg", ["icon.svg", "image/svg+xml"]],
 ]);
 const openAiHealth = createOpenAiHealthChecker();
+const creatorAvatar = createCreatorAvatarCache();
 
 function json(response, status, body) {
   response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
@@ -64,7 +67,16 @@ const server = http.createServer(async (request, response) => {
   try {
     if (!allowedHost(request)) return json(response, 403, { error: "Host rechazado" });
     if (request.method === "GET" && request.url === "/api/config") {
-      return json(response, 200, { config: readAdminConfig(), csrfToken: TOKEN, setupRequired: !fs.existsSync(ENV_PATH) });
+      return json(response, 200, { config: readAdminConfig(), csrfToken: TOKEN, setupRequired: !fs.existsSync(ENV_PATH), version: APP_VERSION, edition: APP_EDITION });
+    }
+    if (request.method === "GET" && request.url === "/api/creator-avatar") {
+      const avatar = await creatorAvatar.get();
+      if (!avatar) {
+        response.writeHead(302, { Location: "/icon.svg", "Cache-Control": "no-store" });
+        return response.end();
+      }
+      response.writeHead(200, { "Content-Type": avatar.contentType, "Cache-Control": "no-store", ETag: avatar.etag });
+      return response.end(avatar.image);
     }
     if (request.method === "GET" && request.url === "/api/faqs") {
       return json(response, 200, { documents: listFaqs(), templates: FAQ_TEMPLATES });
@@ -134,7 +146,7 @@ const server = http.createServer(async (request, response) => {
       if (botIsRunning()) return json(response, 409, { error: "Detén el bot antes de modificar la configuración" });
       const config = saveAdminConfig(await readJson(request, 100_000));
       openAiHealth.reset();
-      return json(response, 200, { config, message: "Configuración guardada. Reinicia el bot para aplicarla." });
+      return json(response, 200, { config, message: "Configuración guardada." });
     }
     const asset = assets.get(request.url);
     if (request.method === "GET" && asset) {

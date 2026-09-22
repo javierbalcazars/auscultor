@@ -3,7 +3,7 @@
 # Auscultor
 
 **Asistente inteligente para alojamientos y turismo.**
-Versión actual: **1.8.1**.
+Versión actual: **1.9.0**.
 
 Auscultor atiende consultas por WhatsApp para alojamientos, campings, hostales,
 cabañas, parques y otros negocios turísticos. Responde usando exclusivamente la
@@ -34,17 +34,17 @@ a Internet. Puede ser un equipo dedicado o un computador de uso cotidiano.
 Auscultor se distribuye como una única aplicación de escritorio para Linux x86_64. La AppImage incluye Electron, Chromium, Node.js, Baileys y las demás dependencias: el usuario no necesita instalar Node, npm, Python, Git ni compiladores.
 
 1. Abre **Releases** en GitHub.
-2. Descarga `Auscultor-Desktop-1.8.1-x86_64.AppImage`.
+2. Descarga `Auscultor-Desktop-1.9.0-x86_64.AppImage`.
 3. Dale permiso de ejecución:
 
 ```bash
-chmod +x Auscultor-Desktop-1.8.1-x86_64.AppImage
+chmod +x Auscultor-Desktop-1.9.0-x86_64.AppImage
 ```
 
 4. Ábrela con doble clic o ejecuta:
 
 ```bash
-./Auscultor-Desktop-1.8.1-x86_64.AppImage
+./Auscultor-Desktop-1.9.0-x86_64.AppImage
 ```
 
 Auscultor abre una ventana propia, elige automáticamente un puerto local libre y permanece en la bandeja cuando se cierra la ventana. Desde el icono de la bandeja puedes volver a mostrarla o elegir **Salir**, lo que detiene el bot de forma segura.
@@ -75,14 +75,19 @@ crear ni editar `.env` manualmente.
 
 Abre la AppImage para mostrar el Panel de Control en su propia ventana. El servidor interno escucha exclusivamente en `127.0.0.1` y selecciona un puerto libre automáticamente; no queda expuesto a otros equipos de la red.
 
+El selector de la barra superior permite usar todo el panel en **español o inglés**. La preferencia queda guardada para las próximas aperturas.
+
 ### Configuración
 
 - **General:** negocio, Vault, API key y modelo.
 - **Personas:** encargados y números ignorados.
 - **Tiempos y límites:** demora, audios, pausas, retención y frecuencia.
 - **Información del negocio:** documentos que Auscultor puede usar al responder.
-- **Herramientas:** diagnóstico, métricas, respaldos cifrados y restauración.
-- **Avanzado:** historial, tokens, tiempos técnicos y desvinculación de WhatsApp.
+- **Herramientas:** diagnóstico y métricas.
+- **Avanzado:** historial, tokens, tiempos técnicos, respaldos cifrados, restauración y desvinculación de WhatsApp.
+- **Info:** versión, edición instalada, licencia y enlaces oficiales del proyecto.
+
+La tarjeta **Info** obtiene el avatar del creador desde GitHub y conserva la última copia válida para poder mostrarla sin conexión a Internet.
 
 La configuración, los respaldos y la restauración se bloquean mientras el bot está encendido. Las FAQs pueden
 editarse en cualquier momento y se aplican en la siguiente consulta.

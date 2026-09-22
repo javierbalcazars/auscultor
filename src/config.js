@@ -8,9 +8,9 @@ const SOURCE_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const PROJECT_ROOT = path.resolve(SOURCE_DIR, "..");
 export const DATA_ROOT = path.resolve(process.env.AUSCULTOR_DATA_DIR || PROJECT_ROOT);
 export const ENV_PATH = path.join(DATA_ROOT, ".env");
-export const APP_VERSION = JSON.parse(
-  fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf-8")
-).version;
+const packageMetadata = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf-8"));
+export const APP_VERSION = packageMetadata.version;
+export const APP_EDITION = packageMetadata.auscultorEdition === "stable" ? "stable" : "experimental";
 
 // En una instalación normal, los datos viven en la raíz del proyecto. La AppImage
 // define AUSCULTOR_DATA_DIR para conservarlos fuera de su sistema de solo lectura.

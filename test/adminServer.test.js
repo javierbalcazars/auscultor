@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { setTimeout as wait } from "node:timers/promises";
@@ -38,9 +39,23 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.equal(configResponse.status, 200);
   assert.equal(configBody.config.OPENAI_API_KEY, "");
   assert.equal(typeof configBody.csrfToken, "string");
+  assert.match(configBody.version, /^\d+\.\d+\.\d+(?:-\d+)?$/);
+  const packageMetadata = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(configBody.edition, packageMetadata.auscultorEdition);
 
   const page = await fetch(`${baseUrl}/`).then((response) => response.text());
   assert.match(page, /data-target="configuracion"/);
+  assert.doesNotMatch(page, /id="app-version"/);
+  assert.match(page, /data-target="info"/);
+  assert.match(page, /id="info-version"/);
+  assert.match(page, /id="app-edition"/);
+  assert.match(page, /id="language-select"/);
+  assert.match(page, /Javier Balcazar S\./);
+  assert.doesNotMatch(page, /javierbalcazars@gmail\.com/);
+  assert.match(page, /github\.com\/javierbalcazars\/auscultor\/issues/);
+  assert.match(page, /src="\/api\/creator-avatar"/);
+  assert.match(page, /width="160" height="160"/);
+  assert.match(page, /Software de código abierto/);
   assert.match(page, /id="generate-qr"/);
   assert.match(page, /id="cancel-qr"/);
   assert.match(page, /<input name="HUMAN_SUPPORT_NUMBERS" type="tel"/);
@@ -48,19 +63,27 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.match(page, /Desvincular y generar QR nuevo/);
   assert.match(page, /Información del negocio/);
   assert.match(page, /Respaldo cifrado/);
+  assert.match(page, /placeholder="Pega aquí tu API key"/);
+  assert.match(page, /id="backup-passphrase"[^>]*minlength="6"/);
+  assert.ok(page.indexOf('id="avanzado"') < page.indexOf('id="backup-passphrase"'));
   assert.doesNotMatch(page, /La sesión está vinculada y el bot puede recibir mensajes/);
   const iconResponse = await fetch(`${baseUrl}/icon.svg`);
   assert.equal(iconResponse.status, 200);
   assert.match(iconResponse.headers.get("content-type"), /image\/svg\+xml/);
   assert.match(await iconResponse.text(), /<svg/);
-
   const browserCode = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
+  assert.doesNotMatch(browserCode, /appVersion\.textContent/);
+  assert.match(browserCode, /infoVersion\.textContent = `v\$\{body\.version\}`/);
   assert.match(browserCode, /Bot encendido/);
   assert.match(browserCode, /Bot apagado/);
   assert.doesNotMatch(browserCode, /Bot conectado/);
   assert.match(browserCode, /Esperando escaneo de QR/);
   assert.match(browserCode, /No se pudo cargar la información del negocio\. Intenta nuevamente\./);
   assert.doesNotMatch(browserCode, /const document = faqDocuments/);
+  const translations = await fetch(`${baseUrl}/i18n.js`).then((response) => response.text());
+  assert.match(translations, /ASSISTANT SETTINGS/);
+  assert.match(translations, /Save settings/);
+  assert.match(translations, /auscultor-language/);
 
   const faqsResponse = await fetch(`${baseUrl}/api/faqs`);
   const faqsBody = await faqsResponse.json();

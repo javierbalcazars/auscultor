@@ -12,8 +12,8 @@ const TAG_BYTES = 16;
 const BACKUP_PATHS = [".env", "auth_session", "Vault", "data"];
 
 function key(passphrase, salt) {
-  if (typeof passphrase !== "string" || passphrase.length < 12) {
-    throw new Error("BACKUP_PASSPHRASE debe tener al menos 12 caracteres");
+  if (typeof passphrase !== "string" || passphrase.length < 6) {
+    throw new Error("BACKUP_PASSPHRASE debe tener al menos 6 caracteres");
   }
   return crypto.scryptSync(passphrase, salt, 32);
 }
