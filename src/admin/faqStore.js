@@ -5,6 +5,7 @@ import { readAdminConfig } from "./configStore.js";
 
 const MAX_NAME_LENGTH = 100;
 const MAX_CONTENT_LENGTH = 200_000;
+const PENDING_TEMPLATE_FIELD = /\[(?:Completar|Escribe|Indica|Describe|Agrega|Aclara)[^\]]*\]/iu;
 
 function faqDirectory() {
   return path.join(resolveProjectPath(readAdminConfig().VAULT_PATH || "./Vault"), "FAQs");
@@ -58,6 +59,9 @@ export function saveFaq({ originalName, name, content }, directory = faqDirector
   const safeName = validName(name);
   const text = String(content ?? "").replace(/\r\n/g, "\n").trim();
   if (!text) throw new Error("La FAQ no puede quedar vacía");
+  if (PENDING_TEMPLATE_FIELD.test(text)) {
+    throw new Error("Completa o elimina todos los campos pendientes de la plantilla");
+  }
   if (text.length > MAX_CONTENT_LENGTH) throw new Error("La FAQ supera el máximo de 200.000 caracteres");
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const target = documentPath(directory, safeName);
@@ -83,8 +87,8 @@ export function deleteFaq(name, directory = faqDirectory(), backupRoot) {
 }
 
 export const FAQ_TEMPLATES = [
-  { name: "Información general.md", content: "# Información general\n\n## Nombre y descripción\n[Completar]\n\n## Contacto\n[Completar]\n" },
-  { name: "Horarios y ubicación.md", content: "# Horarios y ubicación\n\n## Horarios de atención\n[Completar]\n\n## Dirección y cómo llegar\n[Completar]\n" },
-  { name: "Tarifas y reservas.md", content: "# Tarifas y reservas\n\n## Tarifas confirmadas\n[Completar]\n\n## Formas de reserva y pago\n[Completar]\n" },
-  { name: "Servicios y políticas.md", content: "# Servicios y políticas\n\n## Servicios incluidos\n[Completar]\n\n## Mascotas, cancelaciones y reglas\n[Completar]\n" },
+  { name: "Información principal.md", content: "# Información principal\n\n## Nombre del alojamiento\n[Escribe el nombre comercial completo]\n\n## Tipo y descripción\n[Indica si es hotel, hostal, camping, cabaña u otro tipo de alojamiento y descríbelo brevemente]\n\n## Contacto para consultas y reservas\n[Agrega el teléfono, correo o canal oficial que pueden usar los clientes]\n" },
+  { name: "Ubicación y horarios.md", content: "# Ubicación y horarios\n\n## Dirección\n[Escribe la dirección o ubicación confirmada]\n\n## Cómo llegar\n[Describe indicaciones útiles, accesos o referencias]\n\n## Llegada y salida\n[Indica los horarios de check-in y check-out]\n\n## Horario de atención\n[Indica cuándo se responden consultas]\n" },
+  { name: "Tarifas y reservas.md", content: "# Tarifas y reservas\n\n## Tarifas\n[Indica los precios confirmados o de qué factores dependen]\n\n## Qué incluye la tarifa\n[Describe los servicios incluidos y los cobros adicionales]\n\n## Cómo reservar\n[Describe el proceso y los datos necesarios para confirmar una reserva]\n\n## Formas de pago\n[Indica los medios de pago aceptados]\n\n## Cambios y cancelaciones\n[Aclara las condiciones confirmadas]\n" },
+  { name: "Servicios y normas.md", content: "# Servicios y normas\n\n## Servicios disponibles\n[Describe alojamiento, alimentación, estacionamiento, wifi u otros servicios confirmados]\n\n## Normas del lugar\n[Indica las reglas que deben conocer los huéspedes]\n\n## Mascotas y restricciones\n[Aclara si se aceptan mascotas y cualquier restricción relevante]\n\n## Accesibilidad y necesidades especiales\n[Indica la información confirmada o elimina esta sección si no corresponde]\n" },
 ];

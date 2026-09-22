@@ -50,6 +50,8 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.match(page, /id="info-version"/);
   assert.match(page, /id="app-edition"/);
   assert.match(page, /id="language-select"/);
+  assert.match(page, /🇨🇱 Español/);
+  assert.match(page, /🇬🇧 Inglés/);
   assert.match(page, /Javier Balcazar S\./);
   assert.doesNotMatch(page, /javierbalcazars@gmail\.com/);
   assert.match(page, /github\.com\/javierbalcazars\/auscultor\/issues/);
@@ -62,10 +64,21 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.doesNotMatch(page, /<textarea name="HUMAN_SUPPORT_NUMBERS"/);
   assert.match(page, /Desvincular y generar QR nuevo/);
   assert.match(page, /Información del negocio/);
+  assert.match(page, /id="toggle-faq-list"/);
+  assert.match(page, /id="faq-search"/);
+  assert.match(page, /\+ Agregar información/);
+  assert.match(page, /Información que Auscultor puede usar/);
+  assert.match(page, /placeholder="Ejemplo: Horarios y ubicación"/);
+  assert.doesNotMatch(page, /placeholder="Ejemplo: Horarios y ubicación\.md"/);
   assert.match(page, /Respaldo cifrado/);
   assert.match(page, /placeholder="Pega aquí tu API key"/);
+  assert.match(page, /Espera antes de responder \(segundos\)/);
+  assert.match(page, /name="RESPONSE_DELAY_MS" type="number" inputmode="decimal" min="0" step="0\.1"/);
+  assert.doesNotMatch(page, /1000 ms equivalen a 1 segundo/);
   assert.match(page, /id="backup-passphrase"[^>]*minlength="6"/);
-  assert.ok(page.indexOf('id="avanzado"') < page.indexOf('id="backup-passphrase"'));
+  assert.ok(page.indexOf('id="herramientas"') < page.indexOf('id="backup-passphrase"'));
+  assert.doesNotMatch(page, /data-target="general"/);
+  assert.doesNotMatch(page, /data-target="avanzado"/);
   assert.doesNotMatch(page, /La sesión está vinculada y el bot puede recibir mensajes/);
   const iconResponse = await fetch(`${baseUrl}/icon.svg`);
   assert.equal(iconResponse.status, 200);
@@ -90,6 +103,8 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.equal(faqsResponse.status, 200);
   assert.ok(Array.isArray(faqsBody.documents));
   assert.ok(Array.isArray(faqsBody.templates));
+  assert.match(faqsBody.templates[0].content, /Nombre del alojamiento/);
+  assert.doesNotMatch(faqsBody.templates[0].content, /\[Completar\]/);
 
   const toolsResponse = await fetch(`${baseUrl}/api/tools`);
   assert.equal(toolsResponse.status, 200);

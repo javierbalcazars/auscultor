@@ -8,21 +8,18 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><select id="language-select" aria-label="Idioma"><option value="es">Español</option><option value="en">English</option></select><span class="local">● Solo este equipo</span><button id="start-bot" type="button">🤖 Iniciar bot</button></div></header>
+  <header class="topbar"><div class="brand"><span class="logo"><img src="/icon.svg" alt=""></span><div><strong>Auscultor</strong><small>Panel local de configuración</small></div></div><div class="top-actions"><select id="language-select" aria-label="Idioma"><option value="es">🇨🇱 Español</option><option value="en">🇬🇧 Inglés</option></select><span class="local">● Solo este equipo</span><button id="start-bot" type="button">🤖 Iniciar bot</button></div></header>
   <main>
     <section id="setup-welcome" class="setup-welcome hidden"><strong>Bienvenido a Auscultor</strong><p>Completa la configuración, revisa la información del negocio y vincula WhatsApp. El panel te guiará durante el primer inicio.</p></section>
     <section class="hero"><div><p class="eyebrow">CONFIGURACIÓN DEL ASISTENTE</p><h1>Panel de Control</h1><p>Configura el asistente, la información del negocio y sus conexiones desde un solo lugar.</p></div><div class="control-stack"><div id="health-panel" class="health-panel" aria-live="polite"><div><span id="bot-process-led" class="health-led checking"></span><p><b>Bot</b><small>Comprobando proceso…</small></p></div><div><span id="whatsapp-led" class="health-led checking"></span><p><b>WhatsApp</b><small>Comprobando sesión…</small></p></div><div><span id="openai-led" class="health-led checking"></span><p><b>OpenAI API</b><small>Comprobando clave…</small></p></div></div></div></section>
     <section id="whatsapp-link" class="whatsapp-link hidden" aria-live="polite"><div id="qr-view" class="hidden"><h2>Vincular WhatsApp</h2><p>En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.</p><pre id="qr-code"></pre><button id="cancel-qr" class="danger-button" type="button">Cancelar vinculación</button></div></section>
     <form id="config-form">
-      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="configuracion" class="active">Configuración</button><button type="button" data-target="general">General</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Información del negocio</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="avanzado">Avanzado</button><button type="button" data-target="info">Info</button></nav>
-      <section id="configuracion" class="panel active"><div class="section-title"><h2>Configuración</h2><p>Completa los datos principales y vincula WhatsApp sin iniciar el bot manualmente.</p></div><div class="grid">
-        <label><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="Pega aquí tu API key"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Pega la clave privada de tu cuenta de OpenAI.</small></label>
-        <label><span>Número del encargado principal</span><input name="HUMAN_SUPPORT_NUMBERS" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+56 9 1234 5678"><small>Incluye el código de país. Puedes agregar más encargados en la pestaña Personas.</small></label>
-        <div id="generate-qr-action" class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Guarda la configuración, inicia WhatsApp y muestra el QR.</p></div><button id="generate-qr" class="primary" type="button">Generar QR</button></div>
-      </div></section>
-      <section id="general" class="panel"><div class="section-title"><h2>General</h2><p>Identidad, datos y conexión con OpenAI.</p></div><div class="grid">
+      <nav class="tabs" aria-label="Secciones"><button type="button" data-target="configuracion" class="active">Configuración</button><button type="button" data-target="personas">Personas</button><button type="button" data-target="tiempos">Tiempos y límites</button><button type="button" data-target="faqs">Contenido</button><button type="button" data-target="herramientas">Herramientas</button><button type="button" data-target="info">Info</button></nav>
+      <section id="configuracion" class="panel active"><div class="section-title"><h2>Configuración general</h2><p>Configura la identidad, OpenAI, los datos principales y la vinculación de WhatsApp.</p></div><div class="grid">
         <label><span>Nombre del negocio</span><input name="BUSINESS_NAME" maxlength="100" required><small>Se utiliza en mensajes y registros.</small></label>
         <label><span>Ruta de datos</span><input name="VAULT_PATH" required><small>Carpeta que contiene FAQs y Chats.</small></label>
+        <label><span>API key de OpenAI</span><div class="secret"><input name="OPENAI_API_KEY" type="password" autocomplete="new-password" placeholder="Pega aquí tu API key"><button id="toggle-key" type="button">Mostrar</button></div><small id="key-help">Pega la clave privada de tu cuenta de OpenAI.</small></label>
+        <label><span>Número del encargado principal</span><input name="HUMAN_SUPPORT_NUMBERS" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+56 9 1234 5678"><small>Incluye el código de país. Puedes agregar más encargados en la pestaña Personas.</small></label>
         <label><span>Modelo de OpenAI</span>
           <select id="model-select">
             <option value="gpt-4o-mini">GPT-4o mini (muy rápido)</option>
@@ -40,13 +37,14 @@
           <small id="model-help">Modelo muy rápido y económico para consultas frecuentes.</small>
         </label>
         <input name="CONVERSATIONS_FOLDER" type="hidden" value="Chats">
+        <div id="generate-qr-action" class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Guarda la configuración, inicia WhatsApp y muestra el QR.</p></div><button id="generate-qr" class="primary" type="button">Generar QR</button></div>
       </div></section>
       <section id="personas" class="panel"><div class="section-title"><h2>Personas y números</h2><p>Un número por línea, con signo + y código del país.</p></div><div class="grid">
         <label><span>Encargados adicionales</span><textarea id="additional-support-numbers" name="ADDITIONAL_SUPPORT_NUMBERS" rows="8" placeholder="+56 9 1234 5678"></textarea><small>Se suman al encargado principal y recibirán las derivaciones y alertas.</small></label>
         <label><span>Números ignorados o bloqueados</span><textarea name="IGNORE_NUMBERS" rows="8" placeholder="+56 9 1234 5678"></textarea><small>El bot no responderá mensajes de estos números.</small></label>
       </div></section>
       <section id="tiempos" class="panel"><div class="section-title"><h2>Tiempos y límites</h2><p>Ajusta el ritmo de respuesta y la intervención humana.</p></div><div class="grid numeric">
-        <label><span>Espera antes de responder (milisegundos)</span><div class="unit"><input name="RESPONSE_DELAY_MS" type="number" min="0" step="1" required><em>ms</em></div><small>1000 ms equivalen a 1 segundo.</small></label>
+        <label><span>Espera antes de responder (segundos)</span><div class="unit"><input name="RESPONSE_DELAY_MS" type="number" inputmode="decimal" min="0" step="0.1" required><em>seg</em></div></label>
         <label><span>Reenviar audios desde (segundos)</span><div class="unit"><input name="AUDIO_FORWARD_MIN_SECONDS" type="number" min="1" step="1" required><em>seg</em></div></label>
         <label><span>Pausa por atención humana (horas)</span><div class="unit"><input name="HUMAN_TAKEOVER_HOURS" type="number" min="0.1" step="0.1" required><em>horas</em></div></label>
         <label><span>Intervalo entre alertas (minutos)</span><div class="unit"><input name="HUMAN_ALERT_COOLDOWN_MINUTES" type="number" min="0" step="0.1" required><em>min</em></div></label>
@@ -55,26 +53,25 @@
         <label><span>Solicitudes por hora</span><input name="MAX_REQUESTS_PER_HOUR" type="number" min="1" required></label>
         <label><span>Mensajes por lote</span><input name="MAX_BATCH_MESSAGES" type="number" min="1" required></label>
       </div></section>
-      <section id="faqs" class="panel"><div class="section-title"><h2>Información del negocio</h2><p>Estos documentos son la única fuente que Auscultor utiliza para responder. Puedes editarlos incluso con el bot encendido.</p></div>
-        <div class="faq-layout">
-          <aside class="faq-sidebar"><div class="faq-sidebar-actions"><button id="new-faq" type="button" data-live-edit>Nueva FAQ</button><select id="faq-template" data-live-edit><option value="">Usar plantilla…</option></select></div><div id="faq-list" class="faq-list"></div></aside>
-          <div class="faq-editor"><label><span>Nombre del documento</span><input id="faq-name" data-live-edit maxlength="100" placeholder="Ejemplo: Horarios y ubicación.md"></label><label><span>Contenido confirmado</span><textarea id="faq-content" data-live-edit rows="18" maxlength="200000" placeholder="# Título
+      <section id="faqs" class="panel"><div class="section-title"><h2>Información del negocio</h2><p>Agrega la información confirmada que Auscultor puede utilizar para responder a tus clientes.</p></div>
+        <div class="content-toolbar"><div><strong>Contenido disponible</strong><small id="faq-count">Cargando temas…</small></div><div class="content-toolbar-actions"><select id="faq-template" data-live-edit><option value="">Crear desde una plantilla…</option></select><button id="new-faq" type="button" data-live-edit>+ Agregar información</button><button id="toggle-faq-list" type="button" aria-expanded="true">Ocultar lista</button></div></div>
+        <div id="faq-layout" class="faq-layout">
+          <aside class="faq-sidebar"><div class="faq-list-heading"><strong>Temas</strong><small>Selecciona uno para editarlo</small></div><input id="faq-search" type="search" data-live-edit placeholder="Buscar temas…" aria-label="Buscar temas"><div id="faq-list" class="faq-list"></div></aside>
+          <div class="faq-editor"><label><span>Título</span><input id="faq-name" data-live-edit maxlength="97" placeholder="Ejemplo: Horarios y ubicación"></label><label><span>Información que Auscultor puede usar</span><textarea id="faq-content" data-live-edit rows="18" maxlength="200000" placeholder="# Título
 
-Escribe aquí información confirmada del negocio."></textarea></label><div class="faq-editor-actions"><small id="faq-message" role="status"></small><button id="delete-faq" class="danger-button" type="button" data-live-edit>Eliminar</button><button id="save-faq" class="primary" type="button" data-live-edit>Guardar FAQ</button></div></div>
+Escribe aquí información confirmada del negocio."></textarea></label><div class="faq-editor-actions"><small id="faq-message" role="status"></small><button id="delete-faq" class="danger-button" type="button" data-live-edit>Eliminar</button><button id="save-faq" class="primary" type="button" data-live-edit>Guardar cambios</button></div></div>
         </div>
       </section>
-      <section id="herramientas" class="panel"><div class="section-title"><h2>Herramientas</h2><p>Diagnóstico y métricas sin utilizar la terminal.</p></div>
+      <section id="herramientas" class="panel"><div class="section-title"><h2>Herramientas y opciones avanzadas</h2><p>Diagnóstico, métricas, límites técnicos, respaldos y administración de la sesión.</p></div>
         <div class="tools-grid"><div class="tool-card"><div><h3>Diagnóstico local</h3><p>Comprueba configuración, Vault, FAQs y sesión.</p></div><button id="refresh-tools" type="button">Actualizar</button><div id="diagnostic-results" class="tool-results"></div></div>
         <div class="tool-card"><div><h3>Métricas</h3><p>Contadores técnicos sin números ni contenido de conversaciones.</p></div><div id="metrics-results" class="tool-results"></div></div>
-</div>
-      </section>
-      <section id="avanzado" class="panel"><div class="section-title"><h2>Opciones avanzadas</h2><p>Límites técnicos, respaldos y administración de la sesión.</p></div><div class="grid numeric">
+</div><div class="advanced-settings"><h3>Ajustes técnicos</h3><div class="grid numeric">
         <label><span>Historial enviado</span><input name="MAX_HISTORY_MESSAGES" type="number" min="1" required></label><label><span>Historial almacenado</span><input name="MAX_STORED_MESSAGES" type="number" min="1" required></label>
         <label><span>Máximo de caracteres</span><input name="MAX_INPUT_CHARS" type="number" min="500" required></label><label><span>Tokens de salida</span><input name="OPENAI_MAX_OUTPUT_TOKENS" type="number" min="128" max="2048" required></label>
         <label><span>Espera máxima de OpenAI (milisegundos)</span><div class="unit"><input name="OPENAI_TIMEOUT_MS" type="number" min="1" max="120000" required><em>ms</em></div><small>30000 ms equivalen a 30 segundos.</small></label><label><span>Validación al iniciar (milisegundos)</span><div class="unit"><input name="SIGNAL_STARTUP_VALIDATION_MS" type="number" min="500" required><em>ms</em></div><small>3000 ms equivalen a 3 segundos.</small></label>
         <div class="tool-card wide"><div><h3>Respaldo cifrado</h3><p>Guarda configuración, sesión, Vault y datos en <code>.local/encrypted-backups</code>. Detén el bot antes de crearlo.</p></div><label><span>Contraseña del respaldo</span><input id="backup-passphrase" type="password" data-live-edit minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></label><div class="backup-actions"><button id="create-backup" type="button" data-live-edit>Crear respaldo cifrado</button><select id="backup-select" data-live-edit><option value="">Respaldos disponibles…</option></select><button id="restore-backup" class="danger-button" type="button" data-live-edit>Restaurar seleccionado</button></div><small id="tools-message" role="status"></small></div>
         <div class="session-action wide"><div><strong>Vinculación de WhatsApp</strong><p>Desconecta este equipo y elimina su sesión local. El bot se reiniciará y mostrará un QR nuevo.</p></div><button id="reset-whatsapp" class="danger-button" type="button">Desvincular y generar QR nuevo</button></div>
-      </div></section>
+      </div></div></section>
       <section id="info" class="panel"><div class="section-title"><h2>Información</h2><p>Datos oficiales de Auscultor y su creador.</p></div>
         <div class="info-card">
           <div class="info-details">

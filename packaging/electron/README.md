@@ -4,8 +4,8 @@ Auscultor se distribuye como una única AppImage x86_64. El paquete incluye Elec
 
 ## Uso
 
-1. Descarga `Auscultor-Desktop-…-x86_64.AppImage` desde GitHub Releases.
-2. Ejecuta `chmod +x Auscultor-Desktop-*.AppImage`.
+1. Descarga `Auscultor-v…-x86_64.AppImage` desde GitHub Releases.
+2. Ejecuta `chmod +x Auscultor-v*.AppImage`.
 3. Abre la AppImage o intégrala con Gear Lever.
 
 Cerrar la ventana oculta Auscultor en la bandeja para que el bot pueda continuar activo. Desde el icono de la bandeja puedes volver a mostrar la ventana o elegir **Salir**. Al salir, Auscultor detiene el proceso del bot de forma segura.
@@ -26,7 +26,7 @@ npm run desktop:build
 La compilación local deja en la carpeta hermana `Auscultor-AppImages` la AppImage y su archivo `.AppImage.zsync`. El script inserta y verifica esta información dentro de `.upd_info`:
 
 ```text
-gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-Desktop-*-x86_64.AppImage.zsync
+gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-v*-x86_64.AppImage.zsync
 ```
 
 El `.zsync` se genera después de insertar los metadatos para que sus hashes correspondan exactamente al binario publicado. Electron, electron-builder y zsync no deben instalarse en el equipo del usuario final.

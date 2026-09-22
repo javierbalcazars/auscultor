@@ -61,7 +61,7 @@ function startAdminServer() {
 
 function createWindow(url) {
   mainWindow = new BrowserWindow({
-    width: 1180,
+    width: 1320,
     height: 820,
     minWidth: 860,
     minHeight: 640,

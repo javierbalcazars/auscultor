@@ -1,4 +1,4 @@
-name: Construir AppImage Desktop
+name: Construir AppImage
 
 on:
   workflow_dispatch:
@@ -20,16 +20,16 @@ jobs:
       - run: npm ci
       - name: Instalar generador zsync
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y zsync
-      - name: Construir AppImage Desktop actualizable
+      - name: Construir AppImage actualizable
         run: AUSCULTOR_APPIMAGE_OUTPUT_DIR="$GITHUB_WORKSPACE/dist" npm run desktop:build
       - name: Verificar metadatos y generar checksums
         run: |
-          node scripts/appimage-update-info.js verify dist/*.AppImage 'gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-Desktop-*-x86_64.AppImage.zsync'
+          node scripts/appimage-update-info.js verify dist/*.AppImage 'gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-v*-x86_64.AppImage.zsync'
           cd dist
           sha256sum *.AppImage *.AppImage.zsync > SHA256SUMS
       - uses: actions/upload-artifact@v7
         with:
-          name: Auscultor-Desktop-x86_64
+          name: Auscultor-x86_64
           path: |
             dist/*.AppImage
             dist/*.AppImage.zsync
@@ -39,7 +39,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Auscultor ${{ github.ref_name }} Desktop
+          name: Auscultor ${{ github.ref_name }}
           generate_release_notes: true
           make_latest: true
           files: |

@@ -18,6 +18,10 @@ test("administra FAQs dentro de una carpeta aislada y crea respaldos", (t) => {
   assert.equal(fs.readdirSync(backups).length, 1);
   assert.throws(() => saveFaq({ name: "../secreto.md", content: "x" }, directory, backups), /nombre|Ruta/);
   assert.throws(() => saveFaq({ name: "Vacía.md", content: "  " }, directory, backups), /vacía/);
+  assert.throws(
+    () => saveFaq({ name: "Pendiente.md", content: "# Pendiente\n[Escribe el teléfono]" }, directory, backups),
+    /campos pendientes/,
+  );
 
   saveFaq({ name: "Otra.md", content: "# Otra" }, directory, backups);
   deleteFaq("Otra.md", directory, backups);

@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUTPUT_DIR="${AUSCULTOR_APPIMAGE_OUTPUT_DIR:-$(dirname "$ROOT")/Auscultor-AppImages}"
-UPDATE_INFO="${AUSCULTOR_UPDATE_INFO:-gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-Desktop-*-x86_64.AppImage.zsync}"
+UPDATE_INFO="${AUSCULTOR_UPDATE_INFO:-gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-v*-x86_64.AppImage.zsync}"
 ZSYNCMAKE_BIN="${ZSYNCMAKE:-$(command -v zsyncmake || true)}"
 
 if [[ -z "$ZSYNCMAKE_BIN" || ! -x "$ZSYNCMAKE_BIN" ]]; then

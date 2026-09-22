@@ -1,6 +1,6 @@
 {
   "name": "auscultor",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "auscultorEdition": "stable",
   "type": "module",
   "description": "Asistente local de atención para alojamientos y turismo mediante WhatsApp e inteligencia artificial",
@@ -61,7 +61,7 @@
       ],
       "category": "Network",
       "icon": "assets/auscultor.png",
-      "artifactName": "Auscultor-Desktop-${version}-${arch}.${ext}",
+      "artifactName": "Auscultor-v${version}-${arch}.${ext}",
       "syncDesktopName": true
     }
   },

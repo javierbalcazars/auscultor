@@ -26,6 +26,10 @@ const faqName = document.querySelector("#faq-name");
 const faqContent = document.querySelector("#faq-content");
 const faqMessage = document.querySelector("#faq-message");
 const faqTemplate = document.querySelector("#faq-template");
+const faqCount = document.querySelector("#faq-count");
+const faqLayout = document.querySelector("#faq-layout");
+const toggleFaqListButton = document.querySelector("#toggle-faq-list");
+const faqSearch = document.querySelector("#faq-search");
 const createBackupButton = document.querySelector("#create-backup");
 const toolsMessage = document.querySelector("#tools-message");
 const restoreBackupButton = document.querySelector("#restore-backup");
@@ -34,6 +38,7 @@ const supportNumberInput = form.elements.namedItem("HUMAN_SUPPORT_NUMBERS");
 let faqDocuments = [];
 let faqTemplates = [];
 let selectedFaq = null;
+let faqDirty = false;
 let csrfToken = "";
 let botRunning = false;
 let configuration = { hasOpenAiApiKey: false, HUMAN_SUPPORT_NUMBERS: [] };
@@ -121,7 +126,7 @@ function openPanel(panel) {
   document.querySelectorAll(".tabs button, .panel").forEach((item) => item.classList.remove("active"));
   panel.classList.add("active");
   document.querySelector(`.tabs button[data-target="${panel.id}"]`)?.classList.add("active");
-  configActions.classList.toggle("hidden", ["faqs", "herramientas", "info"].includes(panel.id));
+  configActions.classList.toggle("hidden", ["faqs", "info"].includes(panel.id));
 }
 
 function fill(config) {
@@ -135,6 +140,10 @@ function fill(config) {
     : String(config.HUMAN_SUPPORT_NUMBERS || "").split(/[\n,]/).filter(Boolean);
   form.elements.namedItem("HUMAN_SUPPORT_NUMBERS").value = supportNumbers[0] || "";
   form.elements.namedItem("ADDITIONAL_SUPPORT_NUMBERS").value = supportNumbers.slice(1).join("\n");
+  const responseDelayMilliseconds = Number(config.RESPONSE_DELAY_MS);
+  form.elements.namedItem("RESPONSE_DELAY_MS").value = Number.isFinite(responseDelayMilliseconds)
+    ? responseDelayMilliseconds / 1000
+    : "";
   configuration = config;
   refreshStartButton();
   updateModelControl(knownModels.has(config.OPENAI_MODEL) ? config.OPENAI_MODEL : "manual", config.OPENAI_MODEL);
@@ -268,6 +277,9 @@ resetWhatsAppButton.addEventListener("click", async () => {
 });
 
 document.querySelectorAll(".tabs button").forEach((button) => button.addEventListener("click", () => {
+  const leavingFaqEditor = document.querySelector("#faqs").classList.contains("active") && button.dataset.target !== "faqs";
+  if (leavingFaqEditor && !canDiscardFaqChanges()) return;
+  if (leavingFaqEditor && faqDirty) selectFaq(selectedFaq);
   openPanel(document.querySelector(`#${button.dataset.target}`));
 }));
 
@@ -284,6 +296,11 @@ document.querySelector("#toggle-key").addEventListener("click", (event) => {
 
 function readFormValues() {
   const values = Object.fromEntries(new FormData(form));
+  const responseDelaySeconds = Number(String(values.RESPONSE_DELAY_MS).replace(",", "."));
+  if (!Number.isFinite(responseDelaySeconds) || responseDelaySeconds < 0) {
+    throw new Error("Ingresa un tiempo de respuesta válido en segundos.");
+  }
+  values.RESPONSE_DELAY_MS = String(Math.round(responseDelaySeconds * 1000));
   values.HUMAN_SUPPORT_NUMBERS = [values.HUMAN_SUPPORT_NUMBERS, ...values.ADDITIONAL_SUPPORT_NUMBERS.split("\n")].filter(Boolean);
   values.IGNORE_NUMBERS = values.IGNORE_NUMBERS.split("\n");
   return values;
@@ -365,33 +382,84 @@ updateHealth();
 setInterval(updateBotStatus, 5000);
 
 
-function showFaqMessage(text, error = false) {
+function showFaqMessage(text, error = false, pending = false) {
   faqMessage.textContent = i18n.t(text);
-  faqMessage.className = error ? "error" : "success";
+  faqMessage.className = error ? "error" : pending ? "pending" : "success";
+}
+
+function displayFaqName(name) {
+  return String(name || "").replace(/\.md$/i, "");
+}
+
+function storedFaqName(name) {
+  const title = displayFaqName(name).trim();
+  if (!title) throw new Error("Escribe un título para esta información.");
+  return `${title}.md`;
+}
+
+function markFaqDirty() {
+  faqDirty = true;
+  showFaqMessage("Cambios sin guardar.", false, true);
+}
+
+function canDiscardFaqChanges() {
+  return !faqDirty || confirm(i18n.t("Hay cambios sin guardar. ¿Quieres descartarlos?"));
 }
 
 function selectFaq(name) {
   const faqDocument = faqDocuments.find((item) => item.name === name);
   selectedFaq = faqDocument?.name || null;
-  faqName.value = faqDocument?.name || "";
+  faqName.value = displayFaqName(faqDocument?.name);
   faqContent.value = faqDocument?.content || "";
+  faqDirty = false;
   document.querySelector("#delete-faq").disabled = !faqDocument;
   faqList.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.name === selectedFaq));
   showFaqMessage("");
 }
 
+function updateFaqCount() {
+  faqCount.textContent = i18n.language === "en"
+    ? `${faqDocuments.length} available topic${faqDocuments.length === 1 ? "" : "s"}`
+    : `${faqDocuments.length} tema${faqDocuments.length === 1 ? "" : "s"} disponible${faqDocuments.length === 1 ? "" : "s"}`;
+}
+
+function formatFaqDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(i18n.language === "en" ? "en-GB" : "es-CL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 function renderFaqs() {
-  faqList.replaceChildren(...faqDocuments.map((item) => {
+  const query = faqSearch.value.trim().toLocaleLowerCase(i18n.language === "en" ? "en" : "es");
+  const visibleDocuments = faqDocuments.filter((item) => displayFaqName(item.name)
+    .toLocaleLowerCase(i18n.language === "en" ? "en" : "es")
+    .includes(query));
+  const buttons = visibleDocuments.map((item) => {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.name = item.name;
-    button.textContent = item.name.replace(/\.md$/i, "");
-    button.addEventListener("click", () => selectFaq(item.name));
+    button.classList.toggle("active", item.name === selectedFaq);
+    const title = document.createElement("span");
+    title.textContent = displayFaqName(item.name);
+    const updated = document.createElement("small");
+    updated.textContent = formatFaqDate(item.updatedAt);
+    button.append(title, updated);
+    button.addEventListener("click", () => {
+      if (item.name !== selectedFaq && canDiscardFaqChanges()) selectFaq(item.name);
+    });
     return button;
-  }));
-  if (selectedFaq && faqDocuments.some((item) => item.name === selectedFaq)) selectFaq(selectedFaq);
-  else if (faqDocuments[0]) selectFaq(faqDocuments[0].name);
-  else selectFaq(null);
+  });
+  if (buttons.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "faq-empty";
+    empty.textContent = query ? i18n.t("No se encontraron temas.") : i18n.t("Aún no hay temas.");
+    faqList.replaceChildren(empty);
+  } else faqList.replaceChildren(...buttons);
+  updateFaqCount();
 }
 
 async function loadFaqs() {
@@ -403,7 +471,7 @@ async function loadFaqs() {
     faqTemplates = body.templates;
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Usar plantilla…";
+    placeholder.textContent = "Crear desde una plantilla…";
     const options = faqTemplates.map((template, index) => {
       const option = document.createElement("option");
       option.value = String(index);
@@ -412,15 +480,20 @@ async function loadFaqs() {
     });
     faqTemplate.replaceChildren(placeholder, ...options);
     renderFaqs();
+    if (selectedFaq && faqDocuments.some((item) => item.name === selectedFaq)) selectFaq(selectedFaq);
+    else if (faqDocuments[0]) selectFaq(faqDocuments[0].name);
+    else selectFaq(null);
   } catch {
     showFaqMessage("No se pudo cargar la información del negocio. Intenta nuevamente.", true);
   }
 }
 
 document.querySelector("#new-faq").addEventListener("click", () => {
+  if (!canDiscardFaqChanges()) return;
   selectedFaq = null;
-  faqName.value = "Nueva información.md";
+  faqName.value = "Nueva información";
   faqContent.value = "# Nueva información\n\n";
+  markFaqDirty();
   document.querySelector("#delete-faq").disabled = true;
   faqList.querySelectorAll("button").forEach((button) => button.classList.remove("active"));
   faqName.focus();
@@ -428,25 +501,47 @@ document.querySelector("#new-faq").addEventListener("click", () => {
 
 faqTemplate.addEventListener("change", () => {
   if (faqTemplate.value === "") return;
+  if (!canDiscardFaqChanges()) {
+    faqTemplate.value = "";
+    return;
+  }
   const template = faqTemplates[Number(faqTemplate.value)];
   selectedFaq = null;
-  faqName.value = template.name;
+  faqName.value = displayFaqName(template.name);
   faqContent.value = template.content;
+  markFaqDirty();
   document.querySelector("#delete-faq").disabled = true;
   faqTemplate.value = "";
+});
+
+faqName.addEventListener("input", markFaqDirty);
+faqContent.addEventListener("input", markFaqDirty);
+faqSearch.addEventListener("input", renderFaqs);
+
+toggleFaqListButton.addEventListener("click", () => {
+  const collapsed = faqLayout.classList.toggle("list-collapsed");
+  toggleFaqListButton.setAttribute("aria-expanded", String(!collapsed));
+  toggleFaqListButton.textContent = collapsed ? "Mostrar lista" : "Ocultar lista";
 });
 
 document.querySelector("#save-faq").addEventListener("click", async () => {
   showFaqMessage("Guardando…");
   try {
+    const name = storedFaqName(faqName.value);
+    const title = displayFaqName(name);
+    const lines = faqContent.value.replace(/\r\n/g, "\n").split("\n");
+    const firstContentLine = lines.findIndex((line) => line.trim());
+    if (firstContentLine >= 0 && /^#\s+/.test(lines[firstContentLine])) lines[firstContentLine] = `# ${title}`;
+    else lines.unshift(`# ${title}`, "");
     const response = await fetch("/api/faqs", {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-      body: JSON.stringify({ originalName: selectedFaq, name: faqName.value, content: faqContent.value }),
+      body: JSON.stringify({ originalName: selectedFaq, name, content: lines.join("\n") }),
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     selectedFaq = body.document.name;
+    faqDirty = false;
     await loadFaqs();
     showFaqMessage(body.message);
   } catch (error) {
@@ -455,7 +550,7 @@ document.querySelector("#save-faq").addEventListener("click", async () => {
 });
 
 document.querySelector("#delete-faq").addEventListener("click", async () => {
-  if (!selectedFaq || !confirm(i18n.t(`¿Eliminar “${selectedFaq}”? Se conservará un respaldo local.`))) return;
+  if (!selectedFaq || !confirm(i18n.t(`¿Eliminar “${displayFaqName(selectedFaq)}”? Se conservará un respaldo local.`))) return;
   try {
     const response = await fetch("/api/faqs", {
       method: "DELETE",
@@ -465,6 +560,7 @@ document.querySelector("#delete-faq").addEventListener("click", async () => {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     selectedFaq = null;
+    faqDirty = false;
     await loadFaqs();
     showFaqMessage(body.message);
   } catch (error) {
@@ -473,6 +569,12 @@ document.querySelector("#delete-faq").addEventListener("click", async () => {
 });
 
 loadFaqs();
+
+globalThis.addEventListener("beforeunload", (event) => {
+  if (!faqDirty) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
 
 
 function toolResult(name, ok, detail) {
@@ -573,6 +675,7 @@ restoreBackupButton.addEventListener("click", async () => {
 
 languageSelect.addEventListener("change", () => {
   i18n.setLanguage(languageSelect.value);
+  renderFaqs();
   updateModelControl(modelSelect.value, manualModel.value);
   updateBotStatus();
   updateHealth();

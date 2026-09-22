@@ -3,7 +3,7 @@
 # Auscultor
 
 **Asistente inteligente para alojamientos y turismo.**
-Versión actual: **1.9.0**.
+Versión actual: **1.9.1**.
 
 Auscultor atiende consultas por WhatsApp para alojamientos, campings, hostales,
 cabañas, parques y otros negocios turísticos. Responde usando exclusivamente la
@@ -34,17 +34,17 @@ a Internet. Puede ser un equipo dedicado o un computador de uso cotidiano.
 Auscultor se distribuye como una única aplicación de escritorio para Linux x86_64. La AppImage incluye Electron, Chromium, Node.js, Baileys y las demás dependencias: el usuario no necesita instalar Node, npm, Python, Git ni compiladores.
 
 1. Abre **Releases** en GitHub.
-2. Descarga `Auscultor-Desktop-1.9.0-x86_64.AppImage`.
+2. Descarga `Auscultor-v1.9.1-x86_64.AppImage`.
 3. Dale permiso de ejecución:
 
 ```bash
-chmod +x Auscultor-Desktop-1.9.0-x86_64.AppImage
+chmod +x Auscultor-v1.9.1-x86_64.AppImage
 ```
 
 4. Ábrela con doble clic o ejecuta:
 
 ```bash
-./Auscultor-Desktop-1.9.0-x86_64.AppImage
+./Auscultor-v1.9.1-x86_64.AppImage
 ```
 
 Auscultor abre una ventana propia, elige automáticamente un puerto local libre y permanece en la bandeja cuando se cierra la ventana. Desde el icono de la bandeja puedes volver a mostrarla o elegir **Salir**, lo que detiene el bot de forma segura.
@@ -77,36 +77,36 @@ Abre la AppImage para mostrar el Panel de Control en su propia ventana. El servi
 
 El selector de la barra superior permite usar todo el panel en **español o inglés**. La preferencia queda guardada para las próximas aperturas.
 
-### Configuración
+### Secciones
 
-- **General:** negocio, Vault, API key y modelo.
+- **Configuración:** negocio, Vault, API key, modelo, encargado principal y vinculación de WhatsApp.
 - **Personas:** encargados y números ignorados.
 - **Tiempos y límites:** demora, audios, pausas, retención y frecuencia.
-- **Información del negocio:** documentos que Auscultor puede usar al responder.
-- **Herramientas:** diagnóstico y métricas.
-- **Avanzado:** historial, tokens, tiempos técnicos, respaldos cifrados, restauración y desvinculación de WhatsApp.
+- **Contenido:** información confirmada que Auscultor puede usar al responder.
+- **Herramientas:** diagnóstico, métricas, límites técnicos, respaldos cifrados, restauración y desvinculación de WhatsApp.
 - **Info:** versión, edición instalada, licencia y enlaces oficiales del proyecto.
 
 La tarjeta **Info** obtiene el avatar del creador desde GitHub y conserva la última copia válida para poder mostrarla sin conexión a Internet.
 
-La configuración, los respaldos y la restauración se bloquean mientras el bot está encendido. Las FAQs pueden
-editarse en cualquier momento y se aplican en la siguiente consulta.
+La configuración, los respaldos y la restauración se bloquean mientras el bot está encendido. El contenido del negocio puede
+editarse en cualquier momento y los cambios se aplican en la siguiente consulta.
 
-### FAQs desde el panel
+### Contenido del negocio
 
-La pestaña **Información del negocio** permite:
+La pestaña **Contenido** permite:
 
-- Crear documentos o comenzar desde una plantilla.
-- Editar y renombrar documentos existentes.
-- Eliminar con confirmación.
-- Mantener varios documentos por tema.
+- Agregar temas o comenzar desde plantillas guiadas para información principal, ubicación, horarios, tarifas, reservas, servicios y normas.
+- Buscar, editar, renombrar y eliminar temas sin administrar archivos manualmente.
+- Ocultar la lista de temas para utilizar todo el ancho del editor.
+- Detectar cambios sin guardar y evitar que una plantilla incompleta llegue al bot.
+- Mantener sincronizados el título visible y el encabezado interno del contenido.
 
-Antes de modificar o eliminar una FAQ se guarda una copia privada en
+Antes de modificar o eliminar un tema se guarda una copia privada en
 `.local/faq-backups`. El panel solo puede acceder a `Vault/FAQs`; nunca permite
 abrir conversaciones, sesiones o archivos arbitrarios.
 
 No incluyas claves, datos de pago ni información privada de clientes en las
-FAQs. Escribe únicamente información que el bot esté autorizado a comunicar.
+respuestas. Escribe únicamente información que el bot esté autorizado a comunicar.
 
 ## Uso cotidiano
 
@@ -117,7 +117,7 @@ El botón superior inicia y detiene el bot. Los indicadores muestran:
 - **WhatsApp verde:** sesión vinculada.
 - **OpenAI verde:** clave y modelo accesibles.
 
-Para cambiar la cuenta vinculada usa **Avanzado → Desvincular y generar QR
+Para cambiar la cuenta vinculada usa **Herramientas → Desvincular y generar QR
 nuevo**. Esta acción requiere confirmación.
 
 ## Inicio automático opcional
@@ -162,7 +162,7 @@ npm audit --omit=dev
 - **No aparece el QR:** inicia el bot; si ya existe una sesión, WhatsApp se
   conectará sin mostrarlo.
 - **OpenAI aparece en rojo:** revisa clave, modelo, conexión y facturación.
-- **El bot no conoce un dato:** agrégalo en **Información del negocio**.
+- **El bot no conoce un dato:** agrégalo en **Contenido**.
 - **Moviste la carpeta:** vuelve a ejecutar `scripts/install-desktop-launcher.sh`.
 - **El panel no abre:** revisa `.local/admin-panel.log`.
 
