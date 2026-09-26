@@ -22,10 +22,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y zsync
       - name: Construir AppImage actualizable
         run: AUSCULTOR_APPIMAGE_OUTPUT_DIR="$GITHUB_WORKSPACE/dist" npm run desktop:build
-      - name: Mantener compatibilidad con actualizaciones anteriores
-        run: |
-          version=$(node -p "require('./package.json').version")
-          cp "dist/Auscultor-v${version}-x86_64.AppImage.zsync" "dist/Auscultor-Desktop-${version}-x86_64.AppImage.zsync"
       - name: Verificar metadatos y generar checksums
         run: |
           node scripts/appimage-update-info.js verify dist/*.AppImage 'gh-releases-zsync|javierbalcazars|auscultor|latest|Auscultor-v*-x86_64.AppImage.zsync'
