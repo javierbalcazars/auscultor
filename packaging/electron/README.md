@@ -12,7 +12,7 @@ Cerrar la ventana oculta Auscultor en la bandeja para que el bot pueda continuar
 
 Todos los datos se guardan bajo `~/.local/share/Auscultor`, incluida la información interna de Electron en `.desktop`. Las actualizaciones de la AppImage no reemplazan esa carpeta.
 
-Las versiones 1.7.1 y posteriores incorporan información `gh-releases-zsync`. Gear Lever puede consultar la última release pública, descargar solamente los bloques modificados y reemplazar la AppImage. La primera versión compatible debe importarse manualmente; después Gear Lever puede detectar las siguientes versiones.
+Las versiones 1.7.1 y posteriores incorporan información `gh-releases-zsync`. Gear Lever puede consultar la última release de GitHub, descargar solamente los bloques modificados y reemplazar la AppImage. La primera versión compatible debe importarse manualmente; después Gear Lever puede detectar las siguientes versiones.
 
 ## Construcción
 
