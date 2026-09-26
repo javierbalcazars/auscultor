@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 function initialMetrics(now = new Date().toISOString()) {
-  return { startedAt: now, updatedAt: now, counters: {}, durations: {} };
+  return { startedAt: now, updatedAt: now, runtimeMs: 0, runningSince: null, counters: {}, durations: {} };
 }
 
 export function createMetricsStore(filePath) {
@@ -14,6 +14,8 @@ export function createMetricsStore(filePath) {
       return {
         startedAt: parsed.startedAt || new Date().toISOString(),
         updatedAt: parsed.updatedAt || new Date().toISOString(),
+        runtimeMs: Math.max(0, Number(parsed.runtimeMs) || 0),
+        runningSince: parsed.runningSince || null,
         counters: parsed.counters && typeof parsed.counters === "object" ? parsed.counters : {},
         durations: parsed.durations && typeof parsed.durations === "object" ? parsed.durations : {},
       };
@@ -52,5 +54,23 @@ export function createMetricsStore(filePath) {
     return current;
   }
 
-  return { read, increment, duration };
+  function startRuntime() {
+    const metrics = read();
+    if (!metrics.runningSince) {
+      metrics.runningSince = new Date().toISOString();
+      metrics.updatedAt = metrics.runningSince;
+      write(metrics);
+    }
+  }
+
+  function stopRuntime() {
+    const metrics = read();
+    if (!metrics.runningSince) return;
+    metrics.runtimeMs += Math.max(0, Date.now() - new Date(metrics.runningSince).getTime());
+    metrics.runningSince = null;
+    metrics.updatedAt = new Date().toISOString();
+    write(metrics);
+  }
+
+  return { read, increment, duration, startRuntime, stopRuntime };
 }

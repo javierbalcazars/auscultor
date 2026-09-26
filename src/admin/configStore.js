@@ -1,13 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
-import { DATA_ROOT, ENV_PATH } from "../config.js";
+import { DATA_ROOT, ENV_PATH, validateAvailabilityEditUrl, validateAvailabilitySheetUrl } from "../config.js";
 
 export const CONFIG_FIELDS = {
   VAULT_PATH: "./Vault",
   BUSINESS_NAME: "Mi Negocio",
   OPENAI_MODEL: "gpt-4o-mini",
   CONVERSATIONS_FOLDER: "Chats",
+  AVAILABILITY_SHEET_URL: "",
+  AVAILABILITY_EDIT_URL: "",
   CONVERSATION_EXPIRY_HOURS: "24",
   CONVERSATION_RETENTION_DAYS: "180",
   MAX_HISTORY_MESSAGES: "10",
@@ -109,12 +111,19 @@ export function validateAdminConfig(input, existing = {}) {
   }
   output.HUMAN_SUPPORT_NUMBERS = phoneList(input.HUMAN_SUPPORT_NUMBERS, true).join(",");
   output.IGNORE_NUMBERS = phoneList(input.IGNORE_NUMBERS).join(",");
+  const availabilityUrl = String(input.AVAILABILITY_SHEET_URL ?? "").trim();
+  output.AVAILABILITY_SHEET_URL = validateAvailabilitySheetUrl(availabilityUrl || existing.AVAILABILITY_SHEET_URL || "");
+  const editUrl = String(input.AVAILABILITY_EDIT_URL ?? "").trim();
+  output.AVAILABILITY_EDIT_URL = validateAvailabilityEditUrl(editUrl || existing.AVAILABILITY_EDIT_URL || "");
+  output.ADMIN_USERNAME = existing.ADMIN_USERNAME || "";
+  output.ADMIN_PASSWORD_HASH = existing.ADMIN_PASSWORD_HASH || "";
   return output;
 }
 
 function serialize(config) {
   const groups = [
-    ["# Rutas y negocio", "VAULT_PATH", "BUSINESS_NAME", "CONVERSATIONS_FOLDER"],
+    ["# Rutas y negocio", "VAULT_PATH", "BUSINESS_NAME", "CONVERSATIONS_FOLDER", "AVAILABILITY_SHEET_URL", "AVAILABILITY_EDIT_URL"],
+    ["# Administrador del panel", "ADMIN_USERNAME", "ADMIN_PASSWORD_HASH"],
     ["# OpenAI", "OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_TIMEOUT_MS", "OPENAI_MAX_OUTPUT_TOKENS"],
     ["# Asistentes humanos y números ignorados", "HUMAN_SUPPORT_NUMBERS", "IGNORE_NUMBERS"],
     ["# Conversaciones", "CONVERSATION_EXPIRY_HOURS", "CONVERSATION_RETENTION_DAYS", "MAX_HISTORY_MESSAGES", "MAX_STORED_MESSAGES"],

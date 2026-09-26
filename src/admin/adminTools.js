@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import dotenv from "dotenv";
 import { AUTH_SESSION_PATH, DATA_ROOT, ENV_PATH, FAQS_PATH, METRICS_PATH, VAULT_PATH, loadRuntimeConfig } from "../config.js";
 import { createEncryptedBackup, restoreEncryptedBackup, verifyEncryptedBackup } from "../encryptedBackup.js";
 import { createMetricsStore } from "../metricsStore.js";
@@ -30,7 +31,10 @@ function listBackups() {
 export function readAdminTools() {
   const checks = [];
   try {
-    const config = loadRuntimeConfig();
+    const environment = fs.existsSync(ENV_PATH)
+      ? { ...process.env, ...dotenv.parse(fs.readFileSync(ENV_PATH)) }
+      : process.env;
+    const config = loadRuntimeConfig(environment);
     checks.push({ name: "Configuración", ok: true, detail: `${config.humanSupportJids.length} encargado(s)` });
   } catch (error) {
     const detail = /OPENAI_API_KEY|API key de OpenAI/.test(error.message)
@@ -51,7 +55,11 @@ export function readAdminTools() {
       ? `permisos ${modeOf(AUTH_SESSION_PATH)}`
       : (authSessionExists ? "QR pendiente de escanear" : "sin sesión"),
   });
-  return { checks, metrics: createMetricsStore(METRICS_PATH).read(), backups: listBackups() };
+  const metrics = createMetricsStore(METRICS_PATH).read();
+  if (metrics.runningSince) {
+    metrics.runtimeMs += Math.max(0, Date.now() - new Date(metrics.runningSince).getTime());
+  }
+  return { checks, metrics, backups: listBackups() };
 }
 
 export async function createAdminBackup(passphrase) {

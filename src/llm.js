@@ -1,4 +1,5 @@
 import { loadOpenAIConfig } from "./config.js";
+import { readCustomPrompt } from "./admin/promptStore.js";
 
 export const MAX_LLM_REPLY_CHARS = 1500;
 export const MAX_HANDOFF_REASON_CHARS = 300;
@@ -38,7 +39,7 @@ export function validateModelResult(result) {
   return { reply, needsHuman: result.needs_human, handoffReason };
 }
 
-export function buildSystemPrompt(context) {
+export function buildSystemPrompt(context, { includeCustom = true } = {}) {
   const base = `Eres la persona encargada de atender el WhatsApp de un negocio de alojamiento, turismo o atención a visitantes.
   Nunca digas que eres un bot, una IA o un asistente virtual.
 Tu función es brindar una primera atención clara y cordial para resolver consultas simples de huéspedes, visitantes y
@@ -89,7 +90,13 @@ adivines: solicita una aclaración breve o deriva la atención cuando correspond
     ? `\n\nContexto interno completo y autorizado del negocio:\n\n${context}`
     : `\n\nNo se encontró contexto relevante en las notas para el último mensaje.`;
 
-  return base + contextPart;
+  const defaultPrompt = base + contextPart;
+  if (!includeCustom) return defaultPrompt;
+  const customPrompt = readCustomPrompt();
+  if (!customPrompt) return defaultPrompt;
+  return customPrompt.includes("{{CONTEXTO_INTERNO}}")
+    ? customPrompt.replaceAll("{{CONTEXTO_INTERNO}}", contextPart)
+    : `${customPrompt}${contextPart}`;
 }
 
 export function normalizeConversationHistory(conversationHistory) {

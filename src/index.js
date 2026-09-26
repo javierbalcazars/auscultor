@@ -98,6 +98,10 @@ const manualTakeovers = new Set();
 const sessionRepairAttempts = new Map();
 const MAX_SESSION_REPAIR_ATTEMPTS = 2;
 const metrics = createMetricsStore(METRICS_PATH);
+metrics.startRuntime();
+process.once("exit", () => {
+  try { metrics.stopRuntime(); } catch { /* el proceso ya está terminando */ }
+});
 
 function recordMetric(name, amount = 1) {
   try {

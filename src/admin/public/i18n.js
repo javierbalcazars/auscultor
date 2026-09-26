@@ -14,7 +14,8 @@
     ["En el teléfono abre WhatsApp → Dispositivos vinculados → Vincular un dispositivo y escanea este código.", "On your phone, open WhatsApp → Linked devices → Link a device, then scan this code."],
     ["Secciones", "Sections"], ["Configuración", "Settings"], ["Configuración general", "General settings"], ["Personas", "People"], ["Tiempos y límites", "Timing and limits"],
     ["Configura la identidad, OpenAI, los datos principales y la vinculación de WhatsApp.", "Configure identity, OpenAI, core details, and WhatsApp linking."],
-    ["Información del negocio", "Business information"], ["Contenido", "Content"], ["Herramientas", "Tools"], ["Avanzado", "Advanced"], ["Información", "Information"],
+    ["Información del negocio", "Business information"], ["Contenido", "Content"], ["Disponibilidad", "Availability"], ["Herramientas", "Tools"], ["Avanzado", "Advanced"], ["Información", "Information"],
+    ["URL CSV de disponibilidad (Google Sheets)", "Availability CSV URL (Google Sheets)"], ["Opcional. Solo lectura: publica la hoja como CSV para mostrar reservas y bloqueos en el calendario.", "Optional. Read-only: publish the sheet as CSV to show reservations and blocked dates in the calendar."],
     ["Completa los datos principales y vincula WhatsApp sin iniciar el bot manualmente.", "Enter the main details and link WhatsApp without starting the bot manually."],
     ["API key de OpenAI", "OpenAI API key"], ["Pega aquí tu API key", "Paste your API key here"],
     ["Pega la clave privada de tu cuenta de OpenAI.", "Paste the private key from your OpenAI account."], ["Mostrar", "Show"], ["Ocultar", "Hide"],
@@ -49,7 +50,7 @@
     ["Intervalo entre alertas (minutos)", "Interval between alerts (minutes)"], ["Expiración de conversación (horas)", "Conversation expiration (hours)"],
     ["Retención de chats (días)", "Chat retention (days)"], ["Solicitudes por hora", "Requests per hour"], ["Mensajes por lote", "Messages per batch"],
     ["Agrega la información confirmada que Auscultor puede utilizar para responder a tus clientes.", "Add confirmed information that Auscultor can use to reply to your customers."],
-    ["Contenido disponible", "Available content"], ["Cargando temas…", "Loading topics…"], ["Crear desde una plantilla…", "Create from a template…"],
+    ["Contenido disponible", "Available content"], ["Cargando temas…", "Loading topics…"], ["Crear desde una plantilla…", "Create from a template…"], ["+ Crear nueva FAQ", "+ Create new FAQ"],
     ["+ Agregar información", "+ Add information"], ["Ocultar lista", "Hide list"], ["Mostrar lista", "Show list"],
     ["Temas", "Topics"], ["Selecciona uno para editarlo", "Select one to edit"], ["Título", "Title"],
     ["Buscar temas…", "Search topics…"], ["No se encontraron temas.", "No topics found."], ["Aún no hay temas.", "There are no topics yet."],
@@ -59,9 +60,10 @@
     ["Completa o elimina todos los campos pendientes de la plantilla", "Complete or remove every pending template field"],
     ["# Título\n\nEscribe aquí información confirmada del negocio.", "# Title\n\nEnter confirmed business information here."],
     ["Eliminar", "Delete"], ["Guardar cambios", "Save changes"], ["Diagnóstico y métricas sin utilizar la terminal.", "Diagnostics and metrics without using the terminal."],
-    ["Herramientas y avanzado", "Tools and advanced"], ["Herramientas y opciones avanzadas", "Tools and advanced options"],
+    ["Última actualización:", "Last update:"], ["Herramientas y avanzado", "Tools and advanced"], ["Herramientas y opciones avanzadas", "Tools and advanced options"],
     ["Diagnóstico, métricas, límites técnicos, respaldos y administración de la sesión.", "Diagnostics, metrics, technical limits, backups, and session management."], ["Ajustes técnicos", "Technical settings"],
     ["Diagnóstico local", "Local diagnostics"], ["Comprueba configuración, Vault, FAQs y sesión.", "Checks settings, Vault, FAQs, and session."], ["Actualizar", "Refresh"],
+    ["Consulta días disponibles, reservados y bloqueados desde tu hoja pública de Google Sheets.", "View available, reserved, and blocked days from your public Google Sheet."], ["Cargando…", "Loading…"], ["Consultando disponibilidad…", "Loading availability…"], ["Datos actualizados.", "Data updated."], ["Disponible", "Available"], ["Reservado", "Reserved"], ["Bloqueado", "Blocked"], ["Hoy", "Today"], ["Sin conexión, datos de", "Offline, data from"], ["Configura una URL pública de Google Sheets para consultar disponibilidad.", "Configure a public Google Sheets URL to view availability."], ["No se pudo consultar Google Sheets:", "Could not query Google Sheets:"],
     ["Métricas", "Metrics"], ["Contadores técnicos sin números ni contenido de conversaciones.", "Technical counters without phone numbers or conversation content."],
     ["Opciones avanzadas", "Advanced options"], ["Límites técnicos, respaldos y administración de la sesión.", "Technical limits, backups, and session management."],
     ["Historial enviado", "History sent"], ["Historial almacenado", "History stored"], ["Máximo de caracteres", "Maximum characters"], ["Tokens de salida", "Output tokens"],
@@ -97,13 +99,65 @@
     ["Sesión de WhatsApp eliminada. Esperando un QR nuevo.", "WhatsApp session removed. Waiting for a new QR code."],
     ["Hay una clave guardada. Déjala vacía para conservarla.", "A key is already saved. Leave this blank to keep it."],
     ["Aún no hay una clave válida guardada.", "No valid key has been saved yet."],
+    ["Inicia sesión para abrir el panel de Auscultor.", "Sign in to open the Auscultor panel."],
+    ["Español", "Spanish"], ["Inglés", "English"], ["Secciones", "Sections"], ["Mes anterior", "Previous month"], ["Mes siguiente", "Next month"],
+    ["Calendario de disponibilidad", "Availability calendar"], ["Vista previa del chat", "Chat preview"], ["Buscar temas…", "Search topics…"],
+    ["Pega aquí tu link de Sheets", "Paste your Sheets link here"], ["Pega aquí tu link de Apps Script", "Paste your Apps Script link here"],
+    ["Ya hay un link válido. Pega un link nuevo para editar.", "A valid link is already saved. Paste a new link to edit it."],
+    ["Pega aquí tu API key privada de OpenAI.", "Paste your private OpenAI API key here."], ["Pega aquí tu API key", "Paste your API key here"],
+    ["Ya hay una clave válida. Pega una API key nueva para editar.", "A valid key is already saved. Paste a new API key to edit it."],
+    ["Se guarda de forma privada en .env.", "Saved privately in .env."], ["+56 9 1234 5678", "+56 9 1234 5678"],
+    ["Contraseña del administrador", "Administrator password"], ["Mínimo 6 caracteres", "At least 6 characters"],
+    ["URL de edición (Google Apps Script)", "Edit URL (Google Apps Script)"], ["min", "min"], ["ms", "ms"],
+    ["Lun", "Mon"], ["Mar", "Tue"], ["Mié", "Wed"], ["Jue", "Thu"], ["Vie", "Fri"], ["Sáb", "Sat"], ["Dom", "Sun"],
+    ["Resumen de actividad y estado del asistente.", "Activity summary and assistant status."],
+    ["Funciones protegidas para modificar el comportamiento del asistente y administrar la sesión de WhatsApp.", "Protected functions for changing assistant behavior and managing the WhatsApp session."], ["Avanzados", "Advanced"],
+    ["Consulta las conversaciones guardadas localmente en tu Vault.", "View conversations saved locally in your Vault."],
+    ["Consulta y edita la disponibilidad de cada día.", "View and edit each day's availability."], ["Disponibilidad:", "Availability:"],
+    ["¿Cómo quieres que te llamemos?", "What should we call you?"], ["Contraseña", "Password"], ["Entrar", "Sign in"],
+    ["Usuario", "Username"], ["Nombre de usuario", "Username"], ["Configura una clave de administrador para proteger Auscultor.", "Set an administrator password to protect Auscultor."],
+    ["Ingresa tu contraseña para abrir el panel.", "Enter your password to open the panel."], ["Bienvenido nuevamente", "Welcome back"],
+    ["Inicio", "Home"], ["Reservas", "Bookings"], ["Chats", "Chats"], ["Secciones", "Sections"],
+    ["Días ocupados del mes", "Occupied days this month"], ["Editar día seleccionado", "Edit selected day"], ["Selecciona un día del calendario para editarlo.", "Select a calendar day to edit it."],
+    ["Estado", "Status"], ["Nombre del visitante", "Visitor name"], ["Estado del pago", "Payment status"], ["Notas", "Notes"], ["Guardar día", "Save day"],
+    ["Pagado", "Paid"], ["Pendiente", "Pending"], ["No hay reservas ni bloqueos en este mes.", "There are no bookings or blocked days this month."],
+    ["Información sensible o privada", "Sensitive or private information"], ["Ingresa la clave de administrador para ver los chats.", "Enter the administrator password to view chats."],
+    ["Clave de administrador", "Administrator password"], ["Desbloquear chats", "Unlock chats"], ["Conversaciones", "Conversations"], ["Cargando temas…", "Loading topics…"],
+    ["Selecciona una conversación para verla.", "Select a conversation to view it."], ["Primer mensaje", "First message"], ["Último mensaje", "Last message"],
+    ["Información", "Information"], ["Nombre del visitante", "Visitor name"], ["Revisa", "Check"], ["No disponible", "Unavailable"],
+    ["Prompt del asistente", "Assistant prompt"], ["El prompt está protegido. Desbloquéalo para revisarlo o editarlo.", "The prompt is protected. Unlock it to review or edit it."],
+    ["Contraseña del administrador", "Administrator password"], ["Mostrar prompt", "Show prompt"], ["Prompt completo", "Full prompt"],
+    ["Confirma tu contraseña para guardar", "Confirm your password to save"], ["Guardar prompt", "Save prompt"], ["Ocultar prompt", "Hide prompt"],
+    ["Vinculación de WhatsApp", "WhatsApp linking"], ["Desconecta este equipo y elimina su sesión local. El bot se reiniciará y mostrará un QR nuevo.", "Disconnect this device and remove its local session. The bot will restart and show a new QR code."],
+    ["Desvincular y generar QR nuevo", "Unlink and generate a new QR code"], ["¿Confirmar cambio de prompt?", "Confirm prompt change?"], ["El cambio afectará las próximas respuestas del asistente.", "This change will affect the assistant's future replies."],
+    ["Cancelar", "Cancel"], ["Confirmar 3 s", "Confirm for 3 s"], ["Confirmando…", "Confirming…"],
+    ["Datos oficiales de Auscultor y su creador.", "Official information about Auscultor and its creator."], ["Dev:", "Developer:"], ["Edición:", "Edition:"], ["Perfil:", "Profile:"], ["Soporte:", "Support:"],
+    ["Avatar de Javier Balcazar", "Javier Balcazar's avatar"], ["Agrega la información confirmada que Auscultor puede utilizar para responder a tus clientes.", "Add confirmed information that Auscultor can use to reply to your customers."],
+    ["No se pudo cargar la información del negocio. Intenta nuevamente.", "Could not load business information. Try again."],
+    ["Editando", "Editing"], ["Sin observaciones.", "No notes."], ["Observación:", "Note:"], ["Pago:", "Payment:"],
+    ["Guardando día…", "Saving day…"], ["Día actualizado en Google Sheets.", "Day updated in Google Sheets."], ["No se pudo consultar Google Sheets:", "Could not query Google Sheets:"],
+    ["Horas registradas", "Hours recorded"], ["Mensajes recibidos", "Messages received"], ["Mensajes respondidos", "Messages answered"],
+    ["Solicitudes a OpenAI", "OpenAI requests"], ["No hay conversaciones guardadas.", "There are no saved conversations."], ["No se pudo cargar los chats.", "Could not load chats."],
+    ["Ingresa la contraseña del administrador.", "Enter the administrator password."], ["Contraseña incorrecta", "Incorrect password"],
+    ["Ingresa la contraseña del administrador para guardar.", "Enter the administrator password to save."], ["Verificando contraseña…", "Verifying password…"],
+    ["Cambios guardados correctamente.", "Changes saved successfully."], ["Guardando prompt…", "Saving prompt…"], ["Prompt guardado.", "Prompt saved."],
+    ["La sesión se eliminará y tendrás que escanear un QR nuevo.", "The session will be removed and you will need to scan a new QR code."],
+    ["¿Confirmar desvinculación de WhatsApp?", "Confirm WhatsApp unlinking?"], ["Desvinculando WhatsApp y preparando un QR nuevo…", "Unlinking WhatsApp and preparing a new QR code…"],
+    ["Inactivo", "Inactive"], ["Atención humana", "Human support"], ["Respondiendo el bot", "Bot responding"], ["Sin automatización", "No automation"],
+    ["No disponible", "Unavailable"], ["No hay conversaciones guardadas.", "There are no saved conversations."],
   ]);
 
   const trackedTexts = new Set();
   const originalText = new WeakMap();
   const trackedAttributes = new Set();
   const originalAttributes = new WeakMap();
-  let language = globalThis.localStorage.getItem("auscultor-language") === "en" ? "en" : "es";
+  function storedLanguage() {
+    const cookie = globalThis.document.cookie.match(/(?:^|;\s*)auscultor-language=([^;]+)/)?.[1];
+    if (cookie === "en" || cookie === "es") return cookie;
+    return globalThis.localStorage.getItem("auscultor-language") === "en" ? "en" : "es";
+  }
+
+  let language = storedLanguage();
 
   function translate(value) {
     if (language === "es") return value;
@@ -113,7 +167,12 @@
       .replace(/^¿Eliminar “(.+)”\? Se conservará un respaldo local\.$/, "Delete “$1”? A local backup will be kept.")
       .replace(/^(\d+) encargado\(s\)$/, "$1 manager(s)")
       .replace(/^permisos (.+)$/, "permissions $1")
-      .replace(/^(\d+) documento\(s\)$/, "$1 document(s)");
+      .replace(/^(\d+) documento\(s\)$/, "$1 document(s)")
+      .replace(/^(\d+) conversaciones?$/, (_, count) => `${count} conversation${count === "1" ? "" : "s"}`)
+      .replace(/^(\d+) días?$/, (_, count) => `${count} day${count === "1" ? "" : "s"}`)
+      .replace(/^Editando (.+)$/, "Editing $1")
+      .replace(/^Observación: (.+)$/, "Note: $1")
+      .replace(/^Pago: (.+)$/, "Payment: $1");
   }
 
   function applyText(node) {
@@ -163,6 +222,7 @@
   function setLanguage(next) {
     language = next === "en" ? "en" : "es";
     globalThis.localStorage.setItem("auscultor-language", language);
+    globalThis.document.cookie = `auscultor-language=${language}; Max-Age=31536000; Path=/; SameSite=Lax`;
     refresh();
   }
 

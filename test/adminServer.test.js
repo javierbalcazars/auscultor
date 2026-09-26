@@ -11,7 +11,7 @@ const baseUrl = `http://127.0.0.1:${port}`;
 test("el servidor administrativo expone lecturas y protege acciones", async (t) => {
   const child = spawn(process.execPath, ["src/admin/server.js"], {
     cwd: new URL("..", import.meta.url),
-    env: { ...process.env, ADMIN_PORT: String(port) },
+    env: { ...process.env, ADMIN_PORT: String(port), NODE_ENV: "test" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";
@@ -45,6 +45,14 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
 
   const page = await fetch(`${baseUrl}/`).then((response) => response.text());
   assert.match(page, /data-target="configuracion"/);
+  assert.match(page, /data-target="disponibilidad"/);
+  assert.match(page, /name="AVAILABILITY_SHEET_URL"/);
+  assert.match(page, /id="availability-days"/);
+  assert.match(page, /id="dashboard-replies"/);
+  assert.match(page, /id="dashboard-seen"/);
+  assert.match(page, /id="dashboard-hours"/);
+  assert.match(page, /id="dashboard-openai"/);
+  assert.match(page, /id="calendar-availability"|id="dashboard-availability"/);
   assert.doesNotMatch(page, /id="app-version"/);
   assert.match(page, /data-target="info"/);
   assert.match(page, /id="info-version"/);
@@ -66,7 +74,7 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.match(page, /Información del negocio/);
   assert.match(page, /id="toggle-faq-list"/);
   assert.match(page, /id="faq-search"/);
-  assert.match(page, /\+ Agregar información/);
+  assert.match(page, /\+ Crear nueva FAQ/);
   assert.match(page, /Información que Auscultor puede usar/);
   assert.match(page, /placeholder="Ejemplo: Horarios y ubicación"/);
   assert.doesNotMatch(page, /placeholder="Ejemplo: Horarios y ubicación\.md"/);
@@ -76,6 +84,10 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
   assert.match(page, /name="RESPONSE_DELAY_MS" type="number" inputmode="decimal" min="0" step="0\.1"/);
   assert.doesNotMatch(page, /1000 ms equivalen a 1 segundo/);
   assert.match(page, /id="backup-passphrase"[^>]*minlength="6"/);
+  assert.match(page, /id="custom-prompt"/);
+  assert.match(page, /id="prompt-password"/);
+  assert.match(page, /id="save-prompt"/);
+  assert.match(page, /<h1 id="auth-title">Auscultor<\/h1>/);
   assert.ok(page.indexOf('id="herramientas"') < page.indexOf('id="backup-passphrase"'));
   assert.doesNotMatch(page, /data-target="general"/);
   assert.doesNotMatch(page, /data-target="avanzado"/);
@@ -108,7 +120,20 @@ test("el servidor administrativo expone lecturas y protege acciones", async (t) 
 
   const toolsResponse = await fetch(`${baseUrl}/api/tools`);
   assert.equal(toolsResponse.status, 200);
+  const availabilityResponse = await fetch(`${baseUrl}/api/availability`);
+  assert.equal(availabilityResponse.status, 200);
+  assert.equal((await availabilityResponse.json()).source, "not-configured");
   assert.ok(Array.isArray((await toolsResponse.json()).checks));
+  const promptResponse = await fetch(`${baseUrl}/api/prompt`);
+  assert.equal(promptResponse.status, 404);
+  const promptPageCode = await fetch(`${baseUrl}/app.js`).then((response) => response.text());
+  assert.match(promptPageCode, /prompt\/unlock/);
+  const rejectedPrompt = await fetch(`${baseUrl}/api/prompt`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content: "No", password: "incorrecta" }),
+  });
+  assert.equal(rejectedPrompt.status, 403);
 
   const rejectedFaq = await fetch(`${baseUrl}/api/faqs`, {
     method: "PUT",

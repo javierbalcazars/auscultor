@@ -31,6 +31,28 @@ export const VAULT_PATH = resolveProjectPath(
 );
 export const FAQS_PATH = path.join(VAULT_PATH, "FAQs");
 
+export function validateAvailabilitySheetUrl(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  let parsed;
+  try { parsed = new URL(text); } catch { throw new Error("AVAILABILITY_SHEET_URL debe ser una URL válida"); }
+  if (parsed.protocol !== "https:" || !["docs.google.com", "docs.googleusercontent.com"].includes(parsed.hostname)) {
+    throw new Error("AVAILABILITY_SHEET_URL debe ser una URL HTTPS de Google Sheets");
+  }
+  return parsed.toString();
+}
+
+export function validateAvailabilityEditUrl(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  let parsed;
+  try { parsed = new URL(text); } catch { throw new Error("AVAILABILITY_EDIT_URL debe ser una URL válida"); }
+  if (parsed.protocol !== "https:") throw new Error("AVAILABILITY_EDIT_URL debe usar HTTPS");
+  return parsed.toString();
+}
+
+export const AVAILABILITY_SHEET_URL = validateAvailabilitySheetUrl(process.env.AVAILABILITY_SHEET_URL || "");
+
 function readNumber(environment, key, fallback, { integer = false, min = 0, max = Infinity } = {}) {
   const raw = environment[key] ?? String(fallback);
   const value = Number(raw);

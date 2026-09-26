@@ -8,13 +8,38 @@ process.env.AUSCULTOR_DATA_DIR ||= dataDirectory();
 app.setPath("userData", path.join(process.env.AUSCULTOR_DATA_DIR, ".desktop"));
 
 const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) app.quit();
+if (!gotLock) {
+  app.quit();
+  process.exit(0);
+}
 
 let mainWindow = null;
 let serverProcess = null;
 let tray = null;
 let quitting = false;
 let stopBot = null;
+let forcedExitTimer = null;
+
+function terminateChildren() {
+  try { stopBot?.(); } catch {}
+  if (serverProcess && serverProcess.exitCode === null) {
+    serverProcess.kill("SIGTERM");
+    serverProcess = null;
+  }
+}
+
+function quitApplication() {
+  if (quitting) return;
+  quitting = true;
+  terminateChildren();
+  tray?.destroy();
+  mainWindow?.destroy();
+  // Electron puede mantener el proceso vivo por la bandeja o una ventana
+  // oculta. Fuerza la salida después de dar un instante a los hijos para
+  // recibir SIGTERM.
+  forcedExitTimer = setTimeout(() => app.exit(0), 300);
+  forcedExitTimer.unref?.();
+}
 
 function dataDirectory() {
   const base = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
@@ -83,7 +108,10 @@ function createWindow(url) {
   mainWindow.webContents.on("will-navigate", (event, target) => {
     if (!target.startsWith(url)) event.preventDefault();
   });
-  mainWindow.once("ready-to-show", () => mainWindow.show());
+  mainWindow.once("ready-to-show", () => {
+    mainWindow.maximize();
+    mainWindow.show();
+  });
   mainWindow.on("close", (event) => {
     if (quitting) return;
     event.preventDefault();
@@ -102,7 +130,7 @@ function createTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Mostrar Auscultor", click: showMainWindow },
     { type: "separator" },
-    { label: "Salir", click: () => { quitting = true; app.quit(); } },
+    { label: "Salir", click: quitApplication },
   ]));
   tray.on("click", showMainWindow);
 }
@@ -130,7 +158,8 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", () => {});
 app.on("before-quit", () => {
-  quitting = true;
-  try { stopBot?.(); } catch {}
-  if (serverProcess && serverProcess.exitCode === null) serverProcess.kill("SIGTERM");
+  if (!quitting) {
+    quitting = true;
+    terminateChildren();
+  }
 });
