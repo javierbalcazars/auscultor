@@ -48,10 +48,14 @@ Desde el panel:
 2. Agrega uno o más números de encargados con código de país.
 3. Ajusta los tiempos y límites si lo necesitas.
 4. Completa, crea o elimina documentos de FAQ en **Contenido**.
-5. Guarda la configuración e inicia el bot.
-6. Escanea el QR desde WhatsApp → **Dispositivos vinculados**.
+5. Guarda la configuración.
+6. En **Configuración**, pulsa **Generar QR** dentro de Vinculación de WhatsApp.
+7. Escanea el QR desde WhatsApp → **Dispositivos vinculados** y espera a que la
+   sesión aparezca como conectada.
+8. Pulsa **Iniciar bot** para comenzar a responder mensajes.
 
-El botón superior inicia y detiene el bot. Mientras está encendido, los campos
+Si ya existe una sesión vinculada, no necesitas generar ni escanear otro QR:
+Auscultor la recupera al iniciar WhatsApp. El botón superior inicia y detiene el bot. Mientras está encendido, los campos
 de configuración quedan protegidos y el botón de detención permanece disponible.
 
 ## Panel de control
